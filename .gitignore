@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Virtualenv things
+bin/
+include/
+pip-selfcheck.json
+
+# PyCharm
+.idea/
