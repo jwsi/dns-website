@@ -1,10 +1,17 @@
-import socketserver
+import socketserver, dnslib, binascii
 from threading import Thread
 from time import sleep
 
 
-def threaded_handler(p):
-    print(p)
+def threaded_handler(datagram):
+    request = dnslib.DNSRecord.parse(datagram)
+    print(request)
+    print(request.questions)
+    for question in request.questions:
+        print("Record print")
+        print(question.qname)
+        print(dnslib.QTYPE[question.qtype])
+        # Do some search on these params.
     sleep(5)
 
 
@@ -15,7 +22,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     there is no connection the client address must be given explicitly
     when sending data back via sendto().
     """
-
     def handle(self):
         data = self.request[0].strip()
         socket = self.request[1]
