@@ -34,13 +34,12 @@ def search(domain, record_type):
         return _format_record(record[record_type], record_type)
     except KeyError:
         logger.info("Response: UNBOUND")
-        return None, None
+        return None
 
 
 def _format_record(value, record_type):
-    authority = [dnslib.NS("ns1.ultra-horizon.com"), dnslib.NS("ns2.ultra-horizon.com")]
     if record_type == "A":
-        return dnslib.A(value), authority
+        return dnslib.A(value)
 
 
 def get_authority():

@@ -17,17 +17,22 @@ class UDPHandler():
         for question in request.questions:
             domain = question.qname.idna()
             record_type = dnslib.QTYPE[question.qtype]
-            value, authority = search(domain, record_type)
+            value = search(domain, record_type)
             if value is not None:
                 aa = 1
                 rr_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.A, rdata=value))
-                auth_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=authority[0], ttl=172800))
-                auth_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=authority[1], ttl=172800))
-
+                auth_list.append(
+                    dnslib.RR(domain,
+                              rtype=dnslib.QTYPE.NS, rdata=dnslib.NS("ns1.ultra-horizon.com"), ttl=172800))
+                auth_list.append(
+                    dnslib.RR(domain,
+                              rtype=dnslib.QTYPE.NS, rdata=dnslib.NS("ns2.ultra-horizon.com"), ttl=172800))
+        # Build the response.
         response = dnslib.DNSRecord(dnslib.DNSHeader(id = id, qr = 1, aa = aa, ra = 0, rd = recursion_desired),
                                     questions = request.questions,
                                     rr = rr_list,
                                     auth = auth_list)
+        # Write to the socket.
         self.sock.sendto(response.pack(), ip)
 
 
