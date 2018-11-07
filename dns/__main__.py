@@ -1,9 +1,9 @@
-import threading, socket, logging, dnslib
+import threading, socket, dnslib
+from dns.search import search
 
 class UDPHandler():
 
     def __init__(self):
-        logging.info("Initializing UDP Handler")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("0.0.0.0", 8000))
         self.clients_list = []
@@ -13,16 +13,22 @@ class UDPHandler():
         request = dnslib.DNSRecord.parse(datagram)
         recursion_desired = request.header.rd
         id = request.header.id
+        rr_list, auth_list, aa = [], [], 0
         for question in request.questions:
-            domain = question.qname
+            domain = question.qname.idna()
             record_type = dnslib.QTYPE[question.qtype]
-            response = dnslib.DNSRecord(dnslib.DNSHeader(id=id, qr=1, aa=1, ra=0, rd=recursion_desired),
-                                        questions=[dnslib.DNSQuestion(domain)],
-                                        rr=[dnslib.RR(domain,rdata=dnslib.A("1.2.3.4"))],
-                                        auth = [dnslib.RR(domain, rdata=dnslib.A("1.2.3.4"))])
-            self.sock.sendto(response.pack(), ip)
-            import time
-            time.sleep(10)
+            value, authority = search(domain, record_type)
+            if value is not None:
+                aa = 1
+                rr_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.A, rdata=value))
+                auth_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=authority[0], ttl=172800))
+                auth_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=authority[1], ttl=172800))
+
+        response = dnslib.DNSRecord(dnslib.DNSHeader(id = id, qr = 1, aa = aa, ra = 0, rd = recursion_desired),
+                                    questions = request.questions,
+                                    rr = rr_list,
+                                    auth = auth_list)
+        self.sock.sendto(response.pack(), ip)
 
 
     def listen(self):
@@ -33,6 +39,5 @@ class UDPHandler():
 
 if __name__ == '__main__':
     # Make sure all log messages show up
-    logging.getLogger().setLevel(logging.DEBUG)
     handler = UDPHandler()
     handler.listen()
