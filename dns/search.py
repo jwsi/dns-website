@@ -26,84 +26,88 @@ def search(domain, q_type):
     logger.info("Request: " + domain + " " + dnslib.QTYPE[q_type])
     rr_list = []
     if q_type == dnslib.QTYPE.NS or q_type == dnslib.QTYPE.ANY:
-        rr_list += ns_search(domain)
+        rr_list += _ns_search(domain)
     if q_type == dnslib.QTYPE.A or q_type == dnslib.QTYPE.ANY:
-        rr_list += a_search(domain)
+        rr_list += _a_search(domain)
     if q_type == dnslib.QTYPE.AAAA or q_type == dnslib.QTYPE.ANY:
-        rr_list += aaaa_search(domain)
+        rr_list += _aaaa_search(domain)
     if q_type == dnslib.QTYPE.MX or q_type == dnslib.QTYPE.ANY:
-        rr_list += mx_search(domain)
+        rr_list += _mx_search(domain)
     if q_type == dnslib.QTYPE.SOA or q_type == dnslib.QTYPE.ANY:
-        rr_list += soa_search(domain)
+        rr_list += _soa_search(domain)
+    if q_type == dnslib.QTYPE.CNAME or q_type == dnslib.QTYPE.ANY:
+        rr_list += _cname_search(domain)
+    if q_type == dnslib.QTYPE.TXT or q_type == dnslib.QTYPE.ANY:
+        rr_list += _txt_search(domain)
     logger.info("Response: " + str(rr_list))
     return rr_list
 
 
-def a_search(domain):
+def _a_search(domain):
     try:
         record = records.get_item(
             Key={
                 "domain" : domain
             }
-        )["Item"]
+        )["Item"]["A"]
         a_list = []
-        ttl = int(record["A"]["ttl"])
-        for ip in record["A"]["value"]:
+        ttl = int(record["ttl"])
+        for ip in record["value"]:
             a_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.A, rdata=dnslib.A(ip), ttl=ttl))
         return a_list
     except KeyError:
         return []
 
 
-def aaaa_search(domain):
+def _aaaa_search(domain):
     try:
         record = records.get_item(
             Key={
                 "domain" : domain
             }
-        )["Item"]
+        )["Item"]["AAAA"]
         aaaa_list = []
-        ttl = int(record["AAAA"]["ttl"])
-        for ip in record["AAAA"]["value"]:
+        ttl = int(record["ttl"])
+        for ip in record["value"]:
             aaaa_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.AAAA, rdata=dnslib.AAAA(ip), ttl=ttl))
         return aaaa_list
     except KeyError:
         return []
 
 
-def ns_search(domain):
+def _ns_search(domain):
     try:
         record = records.get_item(
             Key={
                 "domain" : domain
             }
-        )["Item"]
+        )["Item"]["NS"]
         ns_list = []
-        ttl = int(record["NS"]["ttl"])
-        for ns in record["NS"]["value"]:
+        ttl = int(record["ttl"])
+        for ns in record["value"]:
             ns_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=dnslib.NS(ns), ttl=ttl))
         return ns_list
     except KeyError:
         return []
 
 
-def mx_search(domain):
+def _mx_search(domain):
     try:
         record = records.get_item(
             Key={
                 "domain": domain
             }
-        )["Item"]
+        )["Item"]["MX"]
         mx_list = []
-        ttl = int(record["MX"]["ttl"])
-        for value in record["MX"]["value"]:
+        ttl = int(record["ttl"])
+        for value in record["value"]:
             mx_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.MX, rdata=dnslib.MX(value["domain"], preference=int(value["preference"])), ttl=ttl))
         return mx_list
     except KeyError:
         return []
 
 
-def soa_search(domain):
+def _soa_search(domain):
     try:
         record = records.get_item(
             Key={
@@ -116,6 +120,37 @@ def soa_search(domain):
         times = list(map(lambda time: int(time), times))
         soa_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.SOA, rdata=dnslib.SOA(record["mname"], rname=record["rname"], times=times), ttl=ttl))
         return soa_list
+    except KeyError:
+        return []
+
+
+def _cname_search(domain):
+    try:
+        record = records.get_item(
+            Key={
+                "domain": domain
+            }
+        )["Item"]["CNAME"]
+        cname_list = []
+        ttl = int(record["ttl"])
+        cname_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.CNAME, rdata=dnslib.CNAME(record["domain"]), ttl=ttl))
+        return cname_list
+    except KeyError:
+        return []
+
+
+def _txt_search(domain):
+    try:
+        record = records.get_item(
+            Key={
+                "domain" : domain
+            }
+        )["Item"]["TXT"]
+        txt_list = []
+        ttl = int(record["ttl"])
+        for txt in record["value"]:
+            txt_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.TXT, rdata=dnslib.TXT(txt), ttl=ttl))
+        return txt_list
     except KeyError:
         return []
 
