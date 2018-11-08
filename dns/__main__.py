@@ -27,7 +27,6 @@ class UDPHandler():
                     dnslib.RR(domain,
                               rtype=dnslib.QTYPE.NS, rdata=dnslib.NS("ns2.ultra-horizon.com"), ttl=172800))
         # Build the response.
-        print(rr_list)
         response = dnslib.DNSRecord(dnslib.DNSHeader(id = id, qr = 1, aa = aa, ra = 0, rd = recursion_desired),
                                     questions = request.questions,
                                     rr = rr_list,
