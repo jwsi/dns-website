@@ -12,10 +12,11 @@ dynamodb = boto3.resource('dynamodb',
                           aws_secret_access_key=os.environ["AWS_ACCESS_KEY"],
                           region_name='eu-west-2')
 # Define the record table.
-table = dynamodb.Table('records')
+a_records = dynamodb.Table('a_records')
+ns_records = dynamodb.Table('ns_records')
 
 
-def search(domain, record_type):
+def search(domain, q_type):
     """
     Given an IDNA domain string and a record type,
     it will find the corresponding value if it exists.
@@ -23,24 +24,47 @@ def search(domain, record_type):
     :param record_type: Record type (A, AAAA, etc...)
     :return: String representing record value or None.
     """
-    logger.info("Request: " + domain + " " + record_type)
+    if q_type == dnslib.QTYPE.NS:
+        return ns_search(domain)
+    elif q_type == dnslib.QTYPE.A:
+        return a_search(domain)
+    return []
+
+
+def a_search(domain):
+    logger.info("Request: " + domain + " A")
     try:
-        record = table.get_item(
+        record = a_records.get_item(
             Key={
-                'record': domain
+                "domain" : domain
             }
         )["Item"]
-        logger.info("Response: " + record[record_type])
-        return _format_record(record[record_type], record_type)
+        logger.info("Response: " + str(record["A"]))
+        a_list = []
+        ttl = int(record["TTL"])
+        for ip in record["A"]:
+            a_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.A, rdata=dnslib.A(ip), ttl=ttl))
+        return a_list
     except KeyError:
         logger.info("Response: UNBOUND")
-        return None
+        return []
 
 
-def _format_record(value, record_type):
-    if record_type == "A":
-        return dnslib.A(value)
+def ns_search(domain):
+    logger.info("Request: " + domain + " NS")
+    try:
+        record = ns_records.get_item(
+            Key={
+                "domain" : domain
+            }
+        )["Item"]
+        logger.info("Response: " + str(record["NS"]))
+        ns_list = []
+        ttl = int(record["TTL"])
+        for idna in record["NS"]:
+            ns_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=dnslib.NS(idna), ttl=ttl))
+        return ns_list
+    except KeyError:
+        logger.info("Response: UNBOUND")
+        return []
 
-
-def get_authority():
-    pass
