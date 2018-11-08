@@ -12,8 +12,7 @@ dynamodb = boto3.resource('dynamodb',
                           aws_secret_access_key=os.environ["AWS_ACCESS_KEY"],
                           region_name='eu-west-2')
 # Define the record table.
-a_records = dynamodb.Table('a_records')
-ns_records = dynamodb.Table('ns_records')
+records = dynamodb.Table('records')
 
 
 def search(domain, q_type):
@@ -34,15 +33,15 @@ def search(domain, q_type):
 def a_search(domain):
     logger.info("Request: " + domain + " A")
     try:
-        record = a_records.get_item(
+        record = records.get_item(
             Key={
                 "domain" : domain
             }
         )["Item"]
         logger.info("Response: " + str(record["A"]))
         a_list = []
-        ttl = int(record["TTL"])
-        for ip in record["A"]:
+        ttl = int(record["A"]["ttl"])
+        for ip in record["A"]["value"]:
             a_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.A, rdata=dnslib.A(ip), ttl=ttl))
         return a_list
     except KeyError:
@@ -53,15 +52,15 @@ def a_search(domain):
 def ns_search(domain):
     logger.info("Request: " + domain + " NS")
     try:
-        record = ns_records.get_item(
+        record = records.get_item(
             Key={
                 "domain" : domain
             }
         )["Item"]
         logger.info("Response: " + str(record["NS"]))
         ns_list = []
-        ttl = int(record["TTL"])
-        for idna in record["NS"]:
+        ttl = int(record["NS"]["ttl"])
+        for idna in record["NS"]["value"]:
             ns_list.append(dnslib.RR(domain, rtype=dnslib.QTYPE.NS, rdata=dnslib.NS(idna), ttl=ttl))
         return ns_list
     except KeyError:
