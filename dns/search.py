@@ -24,15 +24,18 @@ def search(domain, q_type):
     :return: String representing record value or None.
     """
     logger.info("Request: " + domain + " " + dnslib.QTYPE[q_type])
+    rr_list = []
 
     # Search the database for all records on the domain
-    record = records.get_item(
-        Key={
-            "domain": domain
-        }
-    )["Item"]
+    try:
+        record = records.get_item(
+            Key={
+                "domain": domain
+            }
+        )["Item"]
+    except KeyError: # Catch records that don't exist.
+        return rr_list
 
-    rr_list = []
     if q_type == dnslib.QTYPE.A or q_type == dnslib.QTYPE.ANY:
         rr_list += _a_search(record) # A record search
     if q_type == dnslib.QTYPE.AAAA or q_type == dnslib.QTYPE.ANY:
