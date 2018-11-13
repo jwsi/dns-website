@@ -1,4 +1,5 @@
 import boto3, os, logging, dnslib
+from boto3.dynamodb.conditions import Key, Attr
 
 # Set global logging level.
 logging.basicConfig(level=logging.INFO)
@@ -26,16 +27,24 @@ def search(domain, q_type):
     logger.info("Request: " + domain + " " + dnslib.QTYPE[q_type])
     rr_list = []
 
-    # Search the database for all records on the domain
     try:
-        record = records.get_item(
-            Key={
-                "domain": domain
-            }
-        )["Item"]
-    except KeyError: # Catch records that don't exist.
-        return rr_list
+        # Search the database for all live records on the domain
+        results = records.query(
+            KeyConditionExpression=Key('domain').eq(domain),
+            FilterExpression=Attr('live').eq(True)
+        )["Items"]
+    except KeyError:
+        results = []
 
+    for record in results:
+        rr_list += _identify_record(record, q_type)
+
+    logger.info("Response: " + str(rr_list))
+    return rr_list
+
+
+def _identify_record(record, q_type):
+    rr_list = []
     if q_type == dnslib.QTYPE.A or q_type == dnslib.QTYPE.ANY:
         rr_list += _a_search(record) # A record search
     if q_type == dnslib.QTYPE.AAAA or q_type == dnslib.QTYPE.ANY:
@@ -56,7 +65,6 @@ def search(domain, q_type):
         rr_list += _caa_search(record) # CAA record search
     if q_type == dnslib.QTYPE.NAPTR or q_type == dnslib.QTYPE.ANY:
         rr_list += _naptr_search(record) # NAPTR record search
-    logger.info("Response: " + str(rr_list))
     return rr_list
 
 
