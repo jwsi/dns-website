@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, abort, url_for, request
-from supporting.dynamodb import records
+from supporting.dynamodb import records as t_records, Attr
 
 from endpoints.check import PUT_check
 from classes.errors import ControlledException
@@ -8,6 +8,8 @@ from classes.errors import ControlledException
 # Note: EB accepts only "application" so point "app" to this for short hand.
 application = Flask(__name__)
 app = application
+
+optstr = "OPTSTR"
 
 ENTRY_TYPES = {
     "A":     { "ttl": int, "value": [str] },
@@ -49,13 +51,13 @@ current_user = User()
 
 @app.route("/r/")
 def records():
-    resp = records.scan(FilterExpression=Attr("user_id").eq(current_user.user_id))
+    resp = t_records.scan(FilterExpression=Attr("user_id").eq(current_user.user_id))
     return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp["Items"]])
 
 
 @app.route("/r/<domain>/")
 def record(domain):
-    response = records.get_item(Key={
+    response = t_records.get_item(Key={
             "domain": domain,
             "user_id": current_user.user_id,
         })
@@ -72,7 +74,7 @@ def record_entry(domain, type):
     if type not in ENTRY_TYPES:
         abort(404)
 
-    response = records.get_item(Key={
+    response = t_records.get_item(Key={
             "domain": domain,
             "user_id": current_user.user_id
         })
@@ -89,7 +91,7 @@ def record_entry(domain, type):
         if not check_stucture_for_type(item[type], type):
             abort(400)
 
-        ret = records.put_item(Item=item)
+        ret = t_records.put_item(Item=item)
         return jsonify(ret)
 
 
