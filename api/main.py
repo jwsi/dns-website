@@ -1,19 +1,13 @@
 from flask import Flask, jsonify, abort, url_for, request
-import boto3, os
-from boto3.dynamodb.conditions import Key, Attr
+from supporting.dynamodb import records
+
+from endpoints.check import PUT_check
+from classes.errors import ControlledException
 
 # Define the Flask name as "app".
 # Note: EB accepts only "application" so point "app" to this for short hand.
 application = Flask(__name__)
 app = application
-
-# Test to demonstrate dynamo db
-dynamodb = boto3.resource("dynamodb",
-                          aws_access_key_id=os.environ["AWS_ACCESS_ID"],
-                          aws_secret_access_key=os.environ["AWS_ACCESS_KEY"],
-                          region_name="eu-west-2")
-
-tRecords = dynamodb.Table("records")
 
 ENTRY_TYPES = {
     "A":     True,
@@ -38,13 +32,13 @@ current_user = User()
 
 @app.route("/r/")
 def records():
-    resp = tRecords.scan(FilterExpression=Attr("user_id").eq(current_user.user_id))
+    resp = records.scan(FilterExpression=Attr("user_id").eq(current_user.user_id))
     return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp["Items"]])
 
 
 @app.route("/r/<domain>/")
 def record(domain):
-    response = tRecords.get_item(Key={
+    response = records.get_item(Key={
             "domain": domain,
             "user_id": current_user.user_id,
         })
@@ -61,7 +55,7 @@ def record_entry(domain, type):
     if type not in ENTRY_TYPES:
         abort(404)
 
-    response = tRecords.get_item(Key={
+    response = records.get_item(Key={
             "domain": domain,
             "user_id": current_user.user_id
         })
@@ -76,9 +70,24 @@ def record_entry(domain, type):
     else:
         # TODO: validation
         item[type] = request.get_json()
-        ret = tRecords.put_item(Item=item)
+        ret = records.put_item(Item=item)
         return jsonify(ret)
 
+
+@app.route("/r/<domain>/check/", methods=["PUT"])
+def domain_check(domain):
+    return PUT_check(domain, current_user.user_id)
+
+
+@app.errorhandler(ControlledException)
+def controlled_exception_handler(controlled_exception):
+    """
+    Controlled exception handler.
+    :param controlled_exception: Controlled exception to handle.
+    """
+    return jsonify({
+        "status" : controlled_exception.status
+    })
 
 # ----------------------------------------------------------------------------------------------------------------------
 
