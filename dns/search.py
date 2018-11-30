@@ -44,13 +44,11 @@ def search(domain, q_type):
 
 
 def _identify_record(record, q_type):
-    rr_list = []
+    rr_list = _cname_search(record) # CNAME record search (return for all records)
     if q_type == dnslib.QTYPE.A or q_type == dnslib.QTYPE.ANY:
         rr_list += _a_search(record) # A record search
     if q_type == dnslib.QTYPE.AAAA or q_type == dnslib.QTYPE.ANY:
         rr_list += _aaaa_search(record) # AAAA record search
-    if q_type == dnslib.QTYPE.CNAME or q_type == dnslib.QTYPE.ANY:
-        rr_list += _cname_search(record) # CNAME record search
     if q_type == dnslib.QTYPE.NS or q_type == dnslib.QTYPE.ANY:
         rr_list += _ns_search(record) # NS record search
     if q_type == dnslib.QTYPE.MX or q_type == dnslib.QTYPE.ANY:

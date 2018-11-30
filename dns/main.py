@@ -1,5 +1,5 @@
 import threading, socket, dnslib
-from dns.search import search
+from search import search
 
 
 class UDPHandler():
@@ -35,12 +35,22 @@ class UDPHandler():
                 auth_list.append(
                     dnslib.RR(rname = domain,
                               rtype = dnslib.QTYPE.NS,
-                              rdata = dnslib.NS("ns1.ultra-horizon.com"),
+                              rdata = dnslib.NS("ns1.uh-dns.com"),
                               ttl   = 172800))
                 auth_list.append(
                     dnslib.RR(rname = domain,
                               rtype = dnslib.QTYPE.NS,
-                              rdata = dnslib.NS("ns2.ultra-horizon.com"),
+                              rdata = dnslib.NS("ns2.uh-dns.com"),
+                              ttl   = 172800))
+                auth_list.append(
+                    dnslib.RR(rname = domain,
+                              rtype = dnslib.QTYPE.NS,
+                              rdata = dnslib.NS("ns3.uh-dns.com"),
+                              ttl   = 172800))
+                auth_list.append(
+                    dnslib.RR(rname = domain,
+                              rtype = dnslib.QTYPE.NS,
+                              rdata = dnslib.NS("ns4.uh-dns.com"),
                               ttl   = 172800))
         # Build the response.
         response = dnslib.DNSRecord(dnslib.DNSHeader(id = id, qr = 1, aa = aa, ra = 0, rd = recursion_desired),
