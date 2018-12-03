@@ -1,5 +1,5 @@
 from flask import jsonify, abort
-from supporting.dynamodb import records, Attr
+from classes.db import db
 
 
 optstr = "OPTSTR"
@@ -36,20 +36,15 @@ def check_stucture_for_type(struct, type):
 
 
 def GET_records(user_id):
-    resp = records.scan(FilterExpression=Attr("user_id").eq(user_id))
-    return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp["Items"]])
+    resp = db.get_records_by_user(user_id)
+    return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp])
 
 
-def GET_record(domain, user_id):
-    response = records.get_item(Key={
-            "domain": domain,
-            "user_id": user_id,
-        })
-
-    if "Item" not in response:
+def GET_record(user_id, domain):
+    item = db.get_record(domain, user_id)
+    if item is None:
         abort(404)
 
-    item = response["Item"]
     return jsonify(item)
 
 
@@ -57,15 +52,10 @@ def GET_record_entry(user_id, domain, type):
     if type not in ENTRY_TYPES:
         abort(404)
 
-    response = records.get_item(Key={
-            "domain": domain,
-            "user_id": user_id
-        })
-
-    if "Item" not in response:
+    item = db.get_record(domain, user_id)
+    if item is None:
         abort(404)
 
-    item = response["Item"]
     return jsonify(item[type])
 
 
@@ -73,19 +63,13 @@ def PUT_record_entry(user_id, domain, type, json):
     if type not in ENTRY_TYPES:
         abort(404)
 
-    response = records.get_item(Key={
-            "domain": domain,
-            "user_id": user_id
-        })
-
-    if "Item" not in response:
+    item = db.get_record(domain, user_id)
+    if item is None:
         abort(404)
-
-    item = response["Item"]
 
     item[type] = json
     if not check_stucture_for_type(item[type], type):
         abort(400)
 
-    ret = records.put_item(Item=item)
+    ret = db.put_record(item)
     return jsonify(ret)

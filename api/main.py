@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, request
-
 from endpoints.check import PUT_check
 from endpoints.records import GET_records, GET_record, GET_record_entry, PUT_record_entry
 from classes.errors import ControlledException
+
 
 # Define the Flask name as "app".
 # Note: EB accepts only "application" so point "app" to this for short hand.
@@ -22,9 +22,9 @@ def records():
     return GET_records(current_user.user_id)
 
 
-@app.route("/r/<domain>/")
+@app.route("/r/<domain>/", methods=["GET", "PUT"])
 def record(domain):
-    return GET_record(domain, current_user.user_id)
+    return GET_record(current_user.user_id, domain)
 
 
 @app.route("/r/<domain>/<type>/", methods=["GET", "PUT"])
