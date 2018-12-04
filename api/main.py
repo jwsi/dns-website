@@ -1,13 +1,24 @@
-from flask import Flask, jsonify, request
+import os
+from flask import Flask, jsonify, request, session
 from endpoints.check import PUT_check
 from endpoints.records import GET_records, GET_record, GET_record_entry, PUT_record_entry
 from classes.errors import ControlledException
-
+from classes.oauth import Authentication
+from blueprints.authentication import authentication
+from blueprints.website import website
 
 # Define the Flask name as "app".
-# Note: EB accepts only "application" so point "app" to this for short hand.
 application = Flask(__name__)
 app = application
+
+# Setup the authentication system and define the secret session key.
+Authentication.initialize(app)
+app.secret_key = os.environ["FLASK_SECRET_KEY"]
+
+# Register blueprints for the application here.
+app.register_blueprint(authentication)
+app.register_blueprint(website)
+
 
 
 class User:
