@@ -1,5 +1,10 @@
-import boto3
+import boto3, tldextract
 from boto3.dynamodb.conditions import Attr
+
+
+def get_root_domain(url):
+    extracted = tldextract.extract(url)
+    return '{}.{}'.format(extracted.domain, extracted.suffix)
 
 
 class DB:
@@ -48,6 +53,21 @@ class DB:
         return self.records.scan(
             FilterExpression=Attr('domain').eq(domain) & Attr('live').eq(True)
         ).get("Items")
+
+
+    def get_root_domains(self, user_id):
+        records = self.get_records_by_user(user_id)
+        domain_hash = set()
+
+        for r in records:
+            domain_hash.add(get_root_domain(r["domain"]))
+
+        return list(domain_hash)
+
+
+    def get_records_for_root_domain(self, domain, user_id):
+        records = self.get_records_by_user(user_id)
+        return [r for r in records if get_root_domain(r["domain"]) == domain]
 
 
 import os

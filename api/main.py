@@ -1,7 +1,8 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, abort
 import flask_menu as menu
 from endpoints.check import PUT_check
 from endpoints.records import GET_records, GET_record, GET_record_entry, PUT_record_entry
+from classes.db import db
 from classes.errors import ControlledException
 
 
@@ -47,6 +48,21 @@ def split_endpoint(path):
 @menu.register_menu(app, ".", "Home")
 def index():
     return render_template("index.html")
+
+
+@app.route("/sites/")
+@menu.register_menu(app, ".sites", "Sites")
+def sites():
+    return render_template("sites.html", domains=db.get_root_domains(current_user.user_id))
+
+
+@app.route("/sites/<domain>/")
+def site_records(domain):
+    records = db.get_records_for_root_domain(domain, current_user.user_id)
+    if len(records) == 0:
+        abort(404)
+
+    return render_template("records.html", records=records)
 
 
 @app.route("/r/")

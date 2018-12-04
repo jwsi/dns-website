@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}
+Welcome
+{% endblock %}
+
+{% block content %}
+<h1>Records</h1>
+
+
+<div class="list-group">
+	{% for r in records %}
+		<a href="#" class="list-group-item list-group-item-action">{{ r.domain }}</a>
+	{% endfor %}
+</div>
+{% endblock %}
+<!doctype html>
