@@ -4,6 +4,7 @@ from api import current_user
 from api.classes.db import db
 from api.classes.errors import ControlledException
 from api.classes.status import ReturnCode
+from api.decorators.authentication import requires_auth
 
 
 api = Blueprint('api', __name__)
@@ -65,12 +66,14 @@ def _check_no_live_domain(domain):
 
 
 @api.route("/r/")
+@requires_auth("user")
 def records():
     resp = db.get_records_by_user(current_user.user_id)
     return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp])
 
 
 @api.route("/r/<domain>/", methods=["GET", "PUT"])
+@requires_auth("user")
 def record(domain):
     item = db.get_record(domain, current_user.user_id)
     if item is None:
@@ -80,6 +83,7 @@ def record(domain):
 
 
 @api.route("/r/<domain>/<type>/", methods=["GET", "PUT"])
+@requires_auth("user")
 def record_entry(domain, type):
     if request.method == "GET":
         if type not in ENTRY_TYPES:
@@ -107,6 +111,7 @@ def record_entry(domain, type):
 
 
 @api.route("/r/<domain>/check/", methods=["PUT"])
+@requires_auth("user")
 def domain_check(domain):
     """
     Checks if a domain is eligible to go live.
