@@ -24,14 +24,22 @@ class User:
 current_user = User()
 
 
-@app.context_processor
-def inject_user():
-    current_user = User()
+@app.before_request
+def update_current_user():
+    global current_user
+
     if "profile" in session:
         current_user.user_id = session["profile"]["user_id"]
         current_user.fullname = session["profile"]["name"]
         current_user.is_authenticated = True
+    else:
+        current_user.user_id = "guest"
+        current_user.fullname = "Guest"
+        current_user.is_authenticated = False
 
+
+@app.context_processor
+def inject_user():
     return dict(current_user=current_user)
 
 
