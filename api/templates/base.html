@@ -46,11 +46,11 @@
 						<a class="nav-link" href="#">{{ current_user.fullname }}</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="#">Log Out</a>
+						<a class="nav-link" href="{{ url_for('authentication.logout') }}">Log Out</a>
 					</li>
 				{% else %}
 					<li class="nav-item">
-						<a class="nav-link" href="#">Login</a>
+						<a class="nav-link" href="{{ url_for('authentication.login') }}">Login</a>
 					</li>
 				{% endif %}
 				</ul>

@@ -1,7 +1,7 @@
 from flask import jsonify
-from classes.db import db
-from classes.errors import ControlledException
-from classes.status import ReturnCode
+from api.classes.db import db
+from api.classes.errors import ControlledException
+from api.classes.status import ReturnCode
 import whois
 
 

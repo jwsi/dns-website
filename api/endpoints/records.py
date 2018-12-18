@@ -1,5 +1,5 @@
 from flask import jsonify, abort
-from classes.db import db
+from api.classes.db import db
 
 
 optstr = "OPTSTR"
