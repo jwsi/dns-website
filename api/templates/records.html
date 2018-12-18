@@ -14,17 +14,20 @@ Welcome
 			{{ r.domain }}
 			<div class="float-right">
 				{% for type in getRTypes(r) %}
-					<span class="badge
 					{% if type.name in ['A','AAAA','CNAME'] %}
-						badge-info
+						{% set btype="info" %}
 					{% elif type.name in ['MX'] %}
-						badge-warning
+						{% set btype="warning" %}
 					{% elif type.name in ['CAA', 'NAPTR', 'NS', 'SOA'] %}
-						badge-success
+						{% set btype="success" %}
 					{% else %}
-						badge-secondary
+						{% set btype="secondary" %}
 					{% endif %}
-					" title="{{ type.value }}">{{ type.name }}</span>
+
+					<span class="badge badge-{{ btype }}"
+							title='{{ type.data | tojson(indent=4)  }}'>
+						{{ type.name }}
+					</span>
 				{% endfor %}
 			</div>
 		</a>
