@@ -30,4 +30,9 @@ def site_records(domain):
     if len(records) == 0:
         abort(404)
 
-    return render_template("records.html", records=records)
+    def getRTypes(record):
+        from .api import ENTRY_TYPES
+        ret = [{ "name": key, "data": record.get(key)} for key in ENTRY_TYPES if key in record]
+        return ret
+
+    return render_template("records.html", records=records, getRTypes=getRTypes)

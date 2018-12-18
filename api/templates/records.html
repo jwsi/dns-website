@@ -10,7 +10,24 @@ Welcome
 
 <div class="list-group">
 	{% for r in records %}
-		<a href="#" class="list-group-item list-group-item-action">{{ r.domain }}</a>
+		<a href="#" class="list-group-item list-group-item-action">
+			{{ r.domain }}
+			<div class="float-right">
+				{% for type in getRTypes(r) %}
+					<span class="badge
+					{% if type.name in ['A','AAAA','CNAME'] %}
+						badge-info
+					{% elif type.name in ['MX'] %}
+						badge-warning
+					{% elif type.name in ['CAA', 'NAPTR', 'NS', 'SOA'] %}
+						badge-success
+					{% else %}
+						badge-secondary
+					{% endif %}
+					" title="{{ type.value }}">{{ type.name }}</span>
+				{% endfor %}
+			</div>
+		</a>
 	{% endfor %}
 </div>
 {% endblock %}
