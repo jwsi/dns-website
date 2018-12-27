@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}
+Welcome
+{% endblock %}
+
+{% block content %}
+<h1>Sites</h1>
+
+
+<div class="list-group">
+	{% for d in domains %}
+		<a href="{{ url_for('website.site_records', domain=d) }}"
+				class="list-group-item list-group-item-action">
+			{{ d }}
+		</a>
+	{% else %}
+		<div class="list-group-item"><i>No sites found.</i></div>
+	{% endfor %}
+</div>
+{% endblock %}
+<!doctype html>

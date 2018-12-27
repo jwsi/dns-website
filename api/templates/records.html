@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}
+Welcome
+{% endblock %}
+
+{% block content %}
+<h1>Records</h1>
+
+
+<div class="list-group">
+	{% for r in records %}
+		<a href="#" class="list-group-item list-group-item-action">
+			{{ r.domain }}
+			<div class="float-right">
+				{% for type in getRTypes(r) %}
+					{% if type.name in ['A','AAAA','CNAME'] %}
+						{% set btype="info" %}
+					{% elif type.name in ['MX'] %}
+						{% set btype="warning" %}
+					{% elif type.name in ['CAA', 'NAPTR', 'NS', 'SOA'] %}
+						{% set btype="success" %}
+					{% else %}
+						{% set btype="secondary" %}
+					{% endif %}
+
+					<span class="badge badge-{{ btype }}"
+							title='{{ type.data | tojson(indent=4)  }}'>
+						{{ type.name }}
+					</span>
+				{% endfor %}
+			</div>
+		</a>
+	{% endfor %}
+</div>
+{% endblock %}
+<!doctype html>

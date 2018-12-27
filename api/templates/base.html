@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="icon" href="/favicon.ico">
+
+	<title>{% block title %}title{% endblock %} - UH DNS</title>
+
+	<link href="/static/bootstrap.css" rel="stylesheet">
+	<link href="/static/main.css" rel="stylesheet">
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+		<div class="container">
+			<a class="navbar-brand" href="/">UH DNS</a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+
+			<div class="collapse navbar-collapse" id="navbarsExampleDefault">
+				<ul class="navbar-nav mr-auto">
+				{% for item in current_menu.children recursive %}
+					{% if item.visible %}
+						<li class="nav-item{% if item.children %} dropdown{% endif %}">
+							<a class="nav-link" href="{{ item.url }}">
+								{{ item.text }}
+								{% if item.children %}
+									<span class="caret"></span>
+								{% endif %}
+							</a>
+							{% if item.children %}
+							<ul class="dropdown-menu" role="menu">
+								{{ loop(item.children) }}
+							</ul>
+							{% endif %}
+						</li>
+					{% endif %}
+				{% endfor %}
+				</ul>
+
+				<ul class="navbar-nav my-2 my-lg-0">
+				{% if current_user.is_authenticated %}
+					<li class="nav-item">
+						<a class="nav-link" href="#">{{ current_user.fullname }}</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="{{ url_for('authentication.logout') }}">Log Out</a>
+					</li>
+				{% else %}
+					<li class="nav-item">
+						<a class="nav-link" href="{{ url_for('authentication.login') }}">Login</a>
+					</li>
+				{% endif %}
+				</ul>
+			</div>
+			</div>
+	</nav>
+
+	<main role="main">
+		{% block main %}
+			<article class="container my-4">
+				{% block content %}
+				{% endblock %}
+			</article>
+		{% endblock %}
+	</main>
+
+	<footer class="container">
+		<hr>
+		<p>&copy; Company 2017-2018</p>
+	</footer>
+
+	<!-- Bootstrap core JavaScript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="/static/jquery.min.js"></script>
+	<script src="/static/popper.min.js"></script>
+	<script src="/static/bootstrap.min.js"></script>
+</body>
+</html>

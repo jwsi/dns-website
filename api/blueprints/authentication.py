@@ -1,12 +1,12 @@
 import os
 from flask import Blueprint, session, redirect, url_for
 from six.moves.urllib.parse import urlencode
-from classes.oauth import Authentication
+from api.classes.oauth import Authentication
 
 authentication = Blueprint('authentication', __name__)
 
 
-@authentication.route('/callback')
+@authentication.route('/callback/')
 def callback_handling():
     """
     Define a function to handle auth callbacks.
@@ -25,10 +25,10 @@ def callback_handling():
         'name': userinfo['name'],
         'picture': userinfo['picture']
     }
-    return redirect('/dashboard')
+    return redirect(url_for('website.index'))
 
 
-@authentication.route('/login')
+@authentication.route('/login/')
 def login():
     """
     Endpoint to authenticate users with auth0.
@@ -37,12 +37,12 @@ def login():
     return Authentication.auth0.authorize_redirect(redirect_uri=os.environ["AUTH0_CALLBACK_URL"], audience='https://uh-dns.eu.auth0.com/userinfo')
 
 
-@authentication.route('/logout')
+@authentication.route('/logout/')
 def logout():
     """
     Logout a user and delete session data.
     :return:
     """
     session.clear()
-    params = {'returnTo': "http://127.0.0.1:5000/home", 'client_id': 'MR3c9T4pmw3wKXm2YfMloTKpeiVhQgpQ'}
+    params = {'returnTo': "http://localhost:5000/", 'client_id': 'MR3c9T4pmw3wKXm2YfMloTKpeiVhQgpQ'}
     return redirect(Authentication.auth0.api_base_url + '/v2/logout?' + urlencode(params))
