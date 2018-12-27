@@ -24,8 +24,7 @@ Welcome
 						{% set btype="secondary" %}
 					{% endif %}
 
-					<span class="badge badge-{{ btype }}"
-							title='{{ type.data | tojson(indent=4)  }}'>
+					<span class="badge badge-{{ btype }}">
 						{{ type.name }}
 					</span>
 				{% endfor %}
