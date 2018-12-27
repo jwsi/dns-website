@@ -4,4 +4,4 @@ Flask==1.0.2
 Flask-Menu==0.7.0
 pipdeptree==0.13.1
 tldextract==2.2.0
-whois==0.7
+dnslib==0.9.7
