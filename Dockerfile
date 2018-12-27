@@ -1,4 +1,4 @@
-FROM python:3.6-alpine
+FROM python:3.7
 
 RUN adduser -D api
 RUN apk add build-base
