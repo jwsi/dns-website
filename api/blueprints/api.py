@@ -1,4 +1,4 @@
-import whois
+import socket, dnslib
 from flask import Blueprint, request, jsonify, abort
 from api import current_user
 from api.classes.db import db
@@ -39,30 +39,6 @@ def check_structure(value, schema):
 
 def check_stucture_for_type(struct, type):
     return check_structure(struct, ENTRY_TYPES[type])
-
-
-def _get_whois_nameservers(domain):
-    """
-    Gets the authorative nameservers for a domain.
-    :param domain: domain to check.
-    :return: Authorative nameservers for a domain.
-    """
-    try:
-        response = whois.whois(domain[:-1]) # Do WHOIS lookup without trailing .
-        ns = {record.lower() for record in response.name_servers}
-    except: # No nameservers present
-        ns = []
-    return ns
-
-
-def _check_no_live_domain(domain):
-    """
-    Check that no live domain exists already.
-    :param domain: domain to check.
-    """
-    already_live = db.get_live_records_by_domain(domain)
-    if len(already_live) > 0:
-        raise ControlledException(ReturnCode.DOMAIN_ALREADY_LIVE)
 
 
 @api.route("/r/")
@@ -110,7 +86,7 @@ def record_entry(domain, type):
         return jsonify(ret)
 
 
-@api.route("/r/<domain>/check/", methods=["PUT"])
+@api.route("/r/<domain>/check/", methods=["GET"])
 @requires_auth("user")
 def domain_check(domain):
     """
@@ -121,12 +97,7 @@ def domain_check(domain):
     record = db.get_record(domain, current_user.user_id)
     if record is None:
         raise ControlledException(ReturnCode.DOMAIN_NOT_FOUND)
-
-    correct_ns = {"ns1.uh-dns.com", "ns2.uh-dns.com", "ns3.uh-dns.com", "ns4.uh-dns.com"}
-    queried_ns = _get_whois_nameservers(domain)
-    if correct_ns != queried_ns:
-        raise ControlledException(ReturnCode.CHECK_FAILED)
-
+    _check_glue_records(domain)
     _check_no_live_domain(domain)
     # If successful - set the record to be live.
     record["live"] = True
@@ -134,3 +105,38 @@ def domain_check(domain):
     return jsonify({
         "status" : ReturnCode.SUCCESS
     })
+
+
+def _check_glue_records(domain):
+    """
+    Checks the glue records for a particular name.
+    :param domain: Domain to check
+    :return: True if glue records are correct. Otherwise a glue error is raised.
+    """
+    try:
+        question = dnslib.DNSRecord.question(domain, qtype="NS")
+    except UnicodeError:
+        raise ControlledException(ReturnCode.CHECK_FAILED)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("", 0)) # Bind to any available IP and port.
+    sock.settimeout(1)
+    server = "k.root-servers.net" # First query the RIPE root server
+    while True:
+        sock.sendto(question.pack(), (socket.gethostbyname(server), 53))
+        res = dnslib.DNSRecord.parse(sock.recv(4096))
+        nameservers = set([str(record.rdata) for record in res.auth if record.rtype == 2])
+        if nameservers == set(["ns1.uh-dns.com.", "ns2.uh-dns.com."]):
+            return True
+        elif nameservers == set([]) or res.rr != []:
+            raise ControlledException(ReturnCode.INCORRECT_GLUE)
+        server = nameservers.pop()
+
+
+def _check_no_live_domain(domain):
+    """
+    Check that no live domain exists already.
+    :param domain: domain to check.
+    """
+    already_live = db.get_live_records_by_domain(domain)
+    if len(already_live) > 0:
+        raise ControlledException(ReturnCode.DOMAIN_ALREADY_LIVE)

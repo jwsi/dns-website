@@ -8,5 +8,5 @@ class ReturnCode(IntEnum):
     SUCCESS = 0
     # Checking Errors
     DOMAIN_NOT_FOUND = 100
-    CHECK_FAILED = 101
+    INCORRECT_GLUE = 101
     DOMAIN_ALREADY_LIVE = 102
