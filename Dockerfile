@@ -1,17 +1,10 @@
 FROM python:3.7
 
-RUN adduser -D api
-RUN apk add build-base
-RUN apk add python3-dev
-RUN apk add libffi-dev
-RUN apk add openssl-dev
-
 WORKDIR /home/api
 
 COPY requirements.txt requirements.txt
-RUN python3 -m venv env
-RUN env/bin/pip3 install -r requirements.txt
-RUN env/bin/pip3 install gunicorn
+RUN pip install -r ./requirements.txt
+RUN pip install gunicorn
 
 COPY api api
 COPY runprod.sh ./
