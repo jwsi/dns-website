@@ -9,8 +9,6 @@ RUN pip install gunicorn
 COPY api api
 COPY runprod.sh ./
 RUN chmod +x runprod.sh
-RUN chown -R api:api ./
-USER api
 
 ENV FLASK_APP api/__init__.py
 ENV FLASK_DEBUG 0
