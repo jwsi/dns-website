@@ -5,6 +5,7 @@ Welcome
 {% endblock %}
 
 {% block content %}
+<a class="float-right btn btn-primary" href="{{ url_for('website.site_records_new', domain=domain) }}">New</a>
 <h1>Records</h1>
 
 
@@ -33,4 +34,3 @@ Welcome
 	{% endfor %}
 </div>
 {% endblock %}
-<!doctype html>

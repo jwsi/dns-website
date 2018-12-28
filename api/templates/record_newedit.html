@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}
+Welcome
+{% endblock %}
+
+{% block content %}
+<h1>Add Record</h1>
+
+{% from "macros/forms.html" import render_field, render_submit_field, render_checkbox_field %}
+<form method="POST" action="" enctype="multipart/form-data">
+	{{ form.hidden_tag() }}
+	<div class="row">
+	{{ render_field(form.domain, class_="col-sm-4") }}
+	{{ render_field(form.type, class_="col-sm-4") }}
+	{{ render_field(form.ttl, class_="col-sm-4") }}
+	</div>
+	{{ render_field(form.value) }}
+	{{ render_submit_field(form.submit) }}
+</form>
+
+{% endblock %}
+
+
+{% block scriptextra %}
+<script>
+	class Plaintext {
+		constructor(type, field) {
+			this.type = type;
+		}
+		remove() {}
+	}
+
+	class IPList {
+		constructor(type, field) {
+			this.type = type;
+			this.field = field;
+			field.hide();
+			this.build();
+		}
+
+		build() {
+			var field = this.field;
+
+			field.parent().find("ul").remove();
+			this.acc = field.parent().append("<ul></ul>").find("ul");
+
+			var lines = field.val().split(",");
+			for (var i = 0; i < lines.length; i++) {
+				if (lines[i].trim() == "") {
+					continue;
+				}
+
+				this.acc.append(`<li>${lines[i]}</li>`);
+			}
+
+			field.parent().find(".row").remove();
+			this.enter = field.parent().append(`<div class="row px-3">
+				<input class="col-sm-9 form-control" id="eip" placeholder="IP Address">
+				<button class="col-sm-3 btn btn-primary">Add</button>
+			</div>`).find(".row");
+			this.ip = this.enter.find("#eip");
+			this.add   = this.enter.find("button");
+			this.add.click(this.on_add.bind(this));
+		}
+
+		on_add() {
+			var val = this.field.val();
+			if (val != "") {
+				val = val + ",";
+			}
+			val = val + this.ip.val();
+			this.field.val(val);
+			this.build();
+		}
+
+		remove() {
+			this.acc.remove();
+			this.enter.remove();
+			this.field.show();
+		}
+	}
+
+	class CAA {
+		constructor(type, field) {
+			this.type = type;
+			this.field = field;
+			this.field.hide();
+			this.build();
+		}
+
+		build() {
+			var field = this.field;
+
+			field.parent().find(".table").remove();
+			this.acc = field.parent().append("<table class='table'><tr><th>Flags</th><th>Tag</th><th>Value</th></tr></div>").find(".table");
+
+			var lines = field.val().split(",");
+			for (var i = 0; i < lines.length; i++) {
+				if (lines[i].trim() == "") {
+					continue;
+				}
+
+				var parts = lines[i].split("/");
+				this.acc.append(`<tr>
+					<td>${parts[0]}</td>
+					<td>${parts[1]}</td>
+					<td>${parts[2]}</td>
+				</tr>`);
+			}
+
+			field.parent().find(".row").remove();
+			this.enter = field.parent().append(`<div class="row px-3">
+				<input class="col-sm-3 form-control" id="eflags" type="number" placeholder="Flags">
+				<input class="col-sm-3 form-control" id="etag" placeholder="Tag">
+				<input class="col-sm-3 form-control" id="evalue" placeholder="Value">
+				<button class="col-sm-3 btn btn-primary">Add</button>
+			</div>`).find(".row");
+			this.flags = this.enter.find("#eflags");
+			this.tag   = this.enter.find("#etag");
+			this.value = this.enter.find("#evalue");
+			this.add   = this.enter.find("button");
+			this.add.click(this.on_add.bind(this));
+		}
+
+		on_add() {
+			var val = this.field.val();
+			if (val != "") {
+				val = val + ",";
+			}
+			val = val + this.flags.val() + "/" + this.tag.val() + "/" + this.value.val();
+			this.field.val(val);
+			this.build();
+		}
+
+		remove() {
+			this.acc.remove();
+			this.enter.remove();
+			this.field.show();
+		}
+	}
+
+	(function() {
+		var field  = $("#value");
+		var etype  = $("#type");
+		var widget = null;
+
+		function init() {
+			var type = etype.val()
+			if (widget) {
+				if (widget.type == type) {
+					return;
+				}
+
+				widget.remove();
+				field.val("");
+			}
+
+			if (type == "A" || type == "AAAA") {
+				widget = new IPList(type, field);
+			} else if (type == "CNAME" || type == "TXT") {
+				widget = new Plaintext(type, field);
+			} else if (type == "CAA") {
+				widget = new CAA(type, field);
+			} else {
+				alert("Unknown type! " + type);
+			}
+		}
+
+		etype.change(init);
+		init();
+	})();
+</script>
+{% endblock %}

@@ -2,6 +2,7 @@ Authlib==0.10
 boto3==1.9.38
 Flask==1.0.2
 Flask-Menu==0.7.0
+Flask-WTF==0.14.2
 pipdeptree==0.13.1
 tldextract==2.2.0
 dnslib==0.9.7
