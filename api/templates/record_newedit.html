@@ -31,69 +31,43 @@ Welcome
 		remove() {}
 	}
 
-	class IPList {
-		constructor(type, field) {
+	class TableWidget {
+		constructor(type, field, struct) {
 			this.type = type;
-			this.field = field;
-			field.hide();
-			this.build();
-		}
-
-		build() {
-			var field = this.field;
-
-			field.parent().find("ul").remove();
-			this.acc = field.parent().append("<ul></ul>").find("ul");
-
-			var lines = field.val().split(",");
-			for (var i = 0; i < lines.length; i++) {
-				if (lines[i].trim() == "") {
-					continue;
-				}
-
-				this.acc.append(`<li>${lines[i]}</li>`);
-			}
-
-			field.parent().find(".row").remove();
-			this.enter = field.parent().append(`<div class="row px-3">
-				<input class="col-sm-9 form-control" id="eip" placeholder="IP Address">
-				<button class="col-sm-3 btn btn-primary">Add</button>
-			</div>`).find(".row");
-			this.ip = this.enter.find("#eip");
-			this.add   = this.enter.find("button");
-			this.add.click(this.on_add.bind(this));
-		}
-
-		on_add() {
-			var val = this.field.val();
-			if (val != "") {
-				val = val + ",";
-			}
-			val = val + this.ip.val();
-			this.field.val(val);
-			this.build();
-		}
-
-		remove() {
-			this.acc.remove();
-			this.enter.remove();
-			this.field.show();
-		}
-	}
-
-	class CAA {
-		constructor(type, field) {
-			this.type = type;
+			this.struct = struct;
 			this.field = field;
 			this.field.hide();
 			this.build();
+			this.buildInputs();
+		}
+
+		buildInputs() {
+			this.field.parent().find(".row").remove();
+			this.enter = this.field.parent().append("<div class='row px-3'></div>").find(".row");
+
+			var numStructs = Object.keys(this.struct).length;
+			var fsize = Math.floor(11 / numStructs);
+			var bsize   = 12 - fsize*numStructs;
+
+			this.inputs = [];
+
+			for (var key in this.struct) {
+				this.enter.append("<input id='e"+ key + "' class='form-control col-sm-" +
+						fsize + "' placeholder='" + key + "'>");
+				this.inputs.push(this.enter.find("#e" + key));
+			}
+			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
+			this.add   = this.enter.find("button");
+			this.add.click(this.on_add.bind(this));
 		}
 
 		build() {
 			var field = this.field;
 
 			field.parent().find(".table").remove();
-			this.acc = field.parent().append("<table class='table'><tr><th>Flags</th><th>Tag</th><th>Value</th></tr></div>").find(".table");
+			this.acc = field.parent().append("<table class='table'><tr>" +
+				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
+				"</tr></table>").find(".table");
 
 			var lines = field.val().split(",");
 			for (var i = 0; i < lines.length; i++) {
@@ -102,25 +76,10 @@ Welcome
 				}
 
 				var parts = lines[i].split("/");
-				this.acc.append(`<tr>
-					<td>${parts[0]}</td>
-					<td>${parts[1]}</td>
-					<td>${parts[2]}</td>
-				</tr>`);
+				this.acc.append("<tr>" +
+					parts.map((x) => { return "<td>" + x + "</td>"}).join("") +
+					"</tr>");
 			}
-
-			field.parent().find(".row").remove();
-			this.enter = field.parent().append(`<div class="row px-3">
-				<input class="col-sm-3 form-control" id="eflags" type="number" placeholder="Flags">
-				<input class="col-sm-3 form-control" id="etag" placeholder="Tag">
-				<input class="col-sm-3 form-control" id="evalue" placeholder="Value">
-				<button class="col-sm-3 btn btn-primary">Add</button>
-			</div>`).find(".row");
-			this.flags = this.enter.find("#eflags");
-			this.tag   = this.enter.find("#etag");
-			this.value = this.enter.find("#evalue");
-			this.add   = this.enter.find("button");
-			this.add.click(this.on_add.bind(this));
 		}
 
 		on_add() {
@@ -128,9 +87,10 @@ Welcome
 			if (val != "") {
 				val = val + ",";
 			}
-			val = val + this.flags.val() + "/" + this.tag.val() + "/" + this.value.val();
+			val = val + this.inputs.map((x) => { return x.val() }).join("/");
 			this.field.val(val);
 			this.build();
+			this.buildInputs();
 		}
 
 		remove() {
@@ -157,11 +117,11 @@ Welcome
 			}
 
 			if (type == "A" || type == "AAAA") {
-				widget = new IPList(type, field);
+				widget = new TableWidget(type, field, { ip: String });
 			} else if (type == "CNAME" || type == "TXT") {
 				widget = new Plaintext(type, field);
 			} else if (type == "CAA") {
-				widget = new CAA(type, field);
+				widget = new TableWidget(type, field, { flags: Number, tag: String, value: String });
 			} else {
 				alert("Unknown type! " + type);
 			}
