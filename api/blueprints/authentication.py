@@ -34,7 +34,19 @@ def login():
     Endpoint to authenticate users with auth0.
     :return: Redirect to auth0 login page.
     """
-    return Authentication.auth0.authorize_redirect(redirect_uri=os.environ["AUTH0_CALLBACK_URL"], audience='https://uh-dns.eu.auth0.com/userinfo')
+    return Authentication.auth0.authorize_redirect(redirect_uri=os.environ["AUTH0_CALLBACK_URL"],
+                                                   audience='https://uh-dns.eu.auth0.com/userinfo')
+
+
+@authentication.route('/signup/')
+def signup():
+    """
+    Endpoint to authenticate users with auth0.
+    :return: Redirect to auth0 signup page.
+    """
+    return Authentication.auth0.authorize_redirect(redirect_uri=os.environ["AUTH0_CALLBACK_URL"],
+                                                   audience='https://uh-dns.eu.auth0.com/userinfo',
+                                                   signUp="true")
 
 
 @authentication.route('/logout/')
