@@ -46,7 +46,7 @@ def signup():
     Endpoint to authenticate users with auth0.
     :return: Redirect to auth0 signup page.
     """
-    return Authentication.auth0.authorize_redirect(redirect_uri=os.environ["AUTH0_CALLBACK_URL"],
+    return Authentication.auth0.authorize_redirect(redirect_uri=url_for('authentication.callback', _external=True),
                                                    audience='https://uh-dns.eu.auth0.com/userinfo',
                                                    signUp="true")
 
@@ -58,5 +58,5 @@ def logout():
     :return:
     """
     session.clear()
-    params = {'returnTo': "http://localhost:5000/", 'client_id': 'MR3c9T4pmw3wKXm2YfMloTKpeiVhQgpQ'}
+    params = {'returnTo': url_for('website.index', _external=True), 'client_id': 'MR3c9T4pmw3wKXm2YfMloTKpeiVhQgpQ'}
     return redirect(Authentication.auth0.api_base_url + '/v2/logout?' + urlencode(params))
