@@ -48,7 +48,9 @@ class RecordForm(FlaskForm):
     domain = StringField("Domain", [InputRequired(), Length(1, 40)])
     type   = SelectField("Type", [InputRequired()], choices=RecordType.choices(), coerce=RecordType.coerce, default=RecordType.A)
     ttl    = IntegerField("TTL", default=10)
-    value  = StringField("Value", [InputRequired(), Length(0, 1000)])
+    value  = StringField("Value", [Length(0, 1000)])
+    mname  = StringField("MNAME (Primary Master Nameserver)", [Length(0, 1000)])
+    rname  = StringField("RNAME (Email address)", [Length(0, 1000)])
     submit = SubmitField("Save")
 
 

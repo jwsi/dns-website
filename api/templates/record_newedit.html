@@ -15,7 +15,13 @@ Welcome
 	{{ render_field(form.type, class_="col-sm-4") }}
 	{{ render_field(form.ttl, class_="col-sm-4") }}
 	</div>
+	<div class="row soa" style="display:none;">
+		{{ render_field(form.mname, class_="col-sm-6") }}
+		{{ render_field(form.rname, class_="col-sm-6") }}
+	</div>
+
 	{{ render_field(form.value) }}
+
 	{{ render_submit_field(form.submit) }}
 </form>
 
@@ -100,6 +106,18 @@ Welcome
 		}
 	}
 
+	class SOAWidget extends TableWidget {
+		constructor(type, field) {
+			super(type, field, { time: Number });
+
+			$(".soa").show();
+		}
+		remove() {
+			super.remove();
+			$(".soa").hide();
+		}
+	}
+
 	(function() {
 		var field  = $("#value");
 		var etype  = $("#type");
@@ -122,6 +140,16 @@ Welcome
 				widget = new Plaintext(type, field);
 			} else if (type == "CAA") {
 				widget = new TableWidget(type, field, { flags: Number, tag: String, value: String });
+			} else if (type == "MX") {
+				widget = new TableWidget(type, field, { domain: String, preference: Number });
+			} else if (type == "NAPTR") {
+				widget = new TableWidget(type, field, { order: Number, preference: Number, flags: String, service: String, regexp: String, replacement: String });
+			} else if (type == "NS") {
+				widget = new TableWidget(type, field, { domain: String });
+			} else if (type == "SOA") {
+				widget = new SOAWidget(type, field);
+			} else if (type == "SRV") {
+				widget = new TableWidget(type, field, { priority: Number, weight: Number, port: Number, target: String });
 			} else {
 				alert("Unknown type! " + type);
 			}
