@@ -38,13 +38,38 @@ Welcome
 	}
 
 	class TableWidget {
-		constructor(type, field, struct) {
+		constructor(type, field, struct, container_key) {
 			this.type = type;
 			this.struct = struct;
 			this.field = field;
-			this.field.hide();
+			this.container_key = container_key || "value";
+			this.single_element = (Object.keys(struct).length == 1) ? Object.keys(struct)[0] : null;
+			// this.field.hide();
 			this.build();
+		}
+
+		build() {
+			this.buildTable();
 			this.buildInputs();
+		}
+
+		buildTable() {
+			var field = this.field;
+
+			field.parent().find(".table").remove();
+			this.acc = field.parent().append("<table class='table'><tr>" +
+				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
+				"</tr></table>").find(".table");
+
+			var rows = this.get_data();
+			for (let row of rows) {
+				this.acc.append("<tr>" +
+					Object.keys(this.struct)
+						.map((key) => row[key])
+						.map((x) => "<td>" + x + "</td>")
+						.join("") +
+					"</tr>");
+			}
 		}
 
 		buildInputs() {
@@ -55,48 +80,59 @@ Welcome
 			var fsize = Math.floor(11 / numStructs);
 			var bsize   = 12 - fsize*numStructs;
 
-			this.inputs = [];
+			this.inputs = {};
 
 			for (var key in this.struct) {
 				this.enter.append("<input id='e"+ key + "' class='form-control col-sm-" +
 						fsize + "' placeholder='" + key + "'>");
-				this.inputs.push(this.enter.find("#e" + key));
+				this.inputs[key] = this.enter.find("#e" + key);
 			}
 			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
 			this.add   = this.enter.find("button");
 			this.add.click(this.on_add.bind(this));
 		}
 
-		build() {
-			var field = this.field;
-
-			field.parent().find(".table").remove();
-			this.acc = field.parent().append("<table class='table'><tr>" +
-				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
-				"</tr></table>").find(".table");
-
-			var lines = field.val().split(",");
-			for (var i = 0; i < lines.length; i++) {
-				if (lines[i].trim() == "") {
-					continue;
-				}
-
-				var parts = lines[i].split("/");
-				this.acc.append("<tr>" +
-					parts.map((x) => { return "<td>" + x + "</td>"}).join("") +
-					"</tr>");
+		get_raw_data() {
+			try {
+				return JSON.parse(this.field.val())[this.container_key];
+			} catch {
+				return [];
 			}
 		}
 
-		on_add() {
-			var val = this.field.val();
-			if (val != "") {
-				val = val + ",";
+		set_raw_data(data) {
+			var val = {};
+			val[this.container_key] = data;
+			this.field.val(JSON.stringify(val));
+		}
+
+		get_data() {
+			var retval = this.get_raw_data();
+			if (this.single_element) {
+				return retval.map((x) => { return { [this.single_element]: x } });
+			} else {
+				return retval;
 			}
-			val = val + this.inputs.map((x) => { return x.val() }).join("/");
-			this.field.val(val);
+		}
+
+		set_data(data) {
+			if (this.single_element) {
+				data = data.map((x) => x[this.single_element]);
+			}
+			this.set_raw_data(data);
+		}
+
+		on_add() {
+			var ret = {};
+			for (let key in this.inputs) {
+				ret[key] = this.inputs[key].val();
+			}
+
+			var rows = this.get_data();
+			rows.push(ret);
+			this.set_data(rows);
+
 			this.build();
-			this.buildInputs();
 		}
 
 		remove() {
@@ -108,7 +144,7 @@ Welcome
 
 	class SOAWidget extends TableWidget {
 		constructor(type, field) {
-			super(type, field, { time: Number });
+			super(type, field, { time: Number }, "times");
 
 			$(".soa").show();
 		}
