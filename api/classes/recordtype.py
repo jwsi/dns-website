@@ -54,6 +54,17 @@ class RecordType(enum.Enum):
         }
         return __check_structure(struct, ENTRY_TYPES[self.name])
 
+    def validate_put(self, record, entry):
+        if self == RecordType.CNAME:
+            for other in RecordType:
+                if other != RecordType.CNAME and other.name in record:
+                    return False
+
+        elif "CNAME" in record:
+            return False
+
+        return True
+
     @classmethod
     def check_stucture_for_type(struct, type):
         return RecordType.get(type).check_structure(struct)

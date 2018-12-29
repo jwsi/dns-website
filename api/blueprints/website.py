@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, abort, flash
+from flask import Blueprint, render_template, request, abort, flash, redirect, url_for
 from api.decorators.authentication import requires_auth
 from api.classes.db import db
 from api.classes.recordtype import RecordType
@@ -55,6 +55,44 @@ class RecordForm(FlaskForm):
     submit = SubmitField("Save")
 
 
+def do_site_records_new(domain, form):
+    record_entry = {}
+
+    type = form.type.data.name
+    if type == "CNAME":
+        record_entry["domain"] = form.value.data.strip()
+    elif type == "TXT":
+        record_entry["value"] = form.value.data.strip()
+    else:
+        record_entry = json.loads(form.value.data)
+
+    record_entry["ttl"] = form.ttl.data
+
+    if type == "SOA":
+        record_entry["mname"] = form.mname.data
+        record_entry["rname"] = form.rname.data
+
+
+    # Validate record entry
+    print(record_entry)
+    if not form.type.data.check_structure(record_entry):
+        return False, "Invalid record entry"
+
+    # Retrieve record
+    item = db.get_record(form.domain.data, current_user.user_id)
+    if item is None:
+        return False, "Unable to find a record"
+
+    if not form.type.data.validate_put(item, record_entry):
+        return False, "Validation failed."
+
+    # Add
+    item[form.type.data.name] = record_entry
+
+    db.put_record(item)
+    return True, None
+
+
 @website.route("/sites/<domain>/new/", methods=["GET", "POST"])
 @requires_auth("user")
 def site_records_new(domain):
@@ -63,26 +101,10 @@ def site_records_new(domain):
     if request.method == "GET":
         form.domain.data = domain
     else:
-        record_entry = {}
-
-        type = form.type.data.name
-        if type == "CNAME":
-            record_entry["domain"] = form.value.data.strip()
-        elif type == "TXT":
-            record_entry["value"] = form.value.data.strip()
-        else:
-            record_entry = json.loads(form.value.data)
-
-        record_entry["ttl"] = form.ttl.data
-
-        if type == "SOA":
-            record_entry["mname"] = form.mname.data
-            record_entry["rname"] = form.rname.data
-
-        print(record_entry)
-        if not form.type.data.check_structure(record_entry):
-            abort(500)
-
-
+        suc, msg = do_site_records_new(domain, form)
+        if suc:
+            return redirect(url_for("website.site_records", domain=domain))
+        elif msg:
+            flash(msg, "danger")
 
     return render_template("record_newedit.html", form=form)
