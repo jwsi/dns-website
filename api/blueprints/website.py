@@ -23,16 +23,16 @@ def index():
     return render_template("index.html")
 
 
-@website.route("/sites/")
-@menu.register_menu(website, ".sites", "Sites")
+@website.route("/domains/")
+@menu.register_menu(website, ".domains", "Domains")
 @requires_auth("user")
-def sites():
-    return render_template("sites.html", domains=db.get_root_domains(current_user.user_id))
+def domains():
+    return render_template("domains.html", domains=db.get_root_domains(current_user.user_id))
 
 
-@website.route("/sites/<domain>/")
+@website.route("/domains/<domain>/")
 @requires_auth("user")
-def site_records(domain):
+def domain_records(domain):
     records = db.get_records_for_root_domain(domain, current_user.user_id)
     if len(records) == 0:
         abort(404)
@@ -55,7 +55,7 @@ class RecordForm(FlaskForm):
     submit = SubmitField("Save")
 
 
-def do_site_records_new(domain, form):
+def do_domain_records_new(domain, form):
     record_entry = {}
 
     type = form.type.data.name
@@ -93,17 +93,17 @@ def do_site_records_new(domain, form):
     return True, None
 
 
-@website.route("/sites/<domain>/new/", methods=["GET", "POST"])
+@website.route("/domains/<domain>/new/", methods=["GET", "POST"])
 @requires_auth("user")
-def site_records_new(domain):
+def domain_records_new(domain):
     form = RecordForm(formdata=request.form)
 
     if request.method == "GET":
         form.domain.data = domain
     else:
-        suc, msg = do_site_records_new(domain, form)
+        suc, msg = do_domain_records_new(domain, form)
         if suc:
-            return redirect(url_for("website.site_records", domain=domain))
+            return redirect(url_for("website.domain_records", domain=domain))
         elif msg:
             flash(msg, "danger")
 
