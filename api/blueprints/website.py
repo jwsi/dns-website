@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, abort
+from flask import Blueprint, render_template, request, abort, flash
 from api.decorators.authentication import requires_auth
 from api.classes.db import db
 from api.classes.recordtype import RecordType
@@ -6,6 +6,7 @@ from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
 from wtforms.validators import InputRequired, Length
+import json
 
 
 website = Blueprint('website', __name__)
@@ -62,7 +63,26 @@ def site_records_new(domain):
     if request.method == "GET":
         form.domain.data = domain
     else:
-        res = form.type.data.build(form.ttl.data, form.value.data)
-        print(res)
+        record_entry = {}
+
+        type = form.type.data.name
+        if type == "CNAME":
+            record_entry["domain"] = form.value.data.strip()
+        elif type == "TXT":
+            record_entry["value"] = form.value.data.strip()
+        else:
+            record_entry = json.loads(form.value.data)
+
+        record_entry["ttl"] = form.ttl.data
+
+        if type == "SOA":
+            record_entry["mname"] = form.mname.data
+            record_entry["rname"] = form.rname.data
+
+        print(record_entry)
+        if not form.type.data.check_structure(record_entry):
+            abort(500)
+
+
 
     return render_template("record_newedit.html", form=form)

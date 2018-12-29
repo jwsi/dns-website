@@ -54,36 +54,6 @@ class RecordType(enum.Enum):
         }
         return __check_structure(struct, ENTRY_TYPES[self.name])
 
-    def build(self, ttl, value):
-        res = {
-            "ttl": int(ttl),
-        }
-
-        if self.name == "A" or self.name == "AAAA" or self.name == "NS":
-            res["value"] = [x.strip() for x in value.split(",")]
-        elif self.name == "CNAME":
-            res["domain"] = value.strip()
-        elif self.name == "TXT":
-            res["value"] = value.strip()
-        elif self.name == "CAA":
-            def splitRecord(x):
-                if len(x) != 3:
-                    return {}
-
-                return { "flags": int(x[0]), "tag": str(x[1]), "value": str(x[2]) }
-
-            res["value"] = [splitRecord(x.split("/")) for x in value.split(",")]
-        else:
-            print("Unknown build()")
-            return None
-
-        if not self.check_structure(res):
-            print("Malformed build()")
-            return None
-
-        return res
-
-
     @classmethod
     def check_stucture_for_type(struct, type):
         return RecordType.get(type).check_structure(struct)
