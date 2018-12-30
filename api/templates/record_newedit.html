@@ -61,9 +61,7 @@ Welcome
 			this.field = field;
 			this.container_key = container_key || "value";
 			this.single_element = (Object.keys(struct).length == 1) ? Object.keys(struct)[0] : null;
-
 			this.set_data(this.get_data());
-
 			this.field.hide();
 			this.build();
 		}
@@ -89,7 +87,7 @@ Welcome
 						.map((key) => row[key])
 						.map((x) => "<td>" + x + "</td>")
 						.join("") +
-						"<td><button data-i=" + i + " class='delete-row btn btn-danger btn-sm'>X</button></td>" +
+						"<td><button data-i=" + i + " class='delete-row btn btn-danger btn-sm' type='button'>X</button></td>" +
 					"</tr>");
 			}
 
@@ -115,8 +113,8 @@ Welcome
 						" placeholder='" + key + "'>");
 				this.inputs[key] = this.enter.find("#e" + key);
 			}
-			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
-			this.add   = this.enter.find("button");
+			this.enter.append("<button class='add-row btn btn-primary col-sm-" + bsize + "' type='button'>Add</button>")
+			this.add   = this.enter.find(".add-row");
 			this.add.click(this.on_add.bind(this));
 		}
 
@@ -159,6 +157,10 @@ Welcome
 				}
 			}
 
+			var rows = this.get_data();
+			rows.push(ret);
+			this.set_data(rows);
+			this.build();
 		}
 
 		delete_row(i) {
