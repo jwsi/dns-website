@@ -37,6 +37,7 @@ def domains():
 @website.route("/domains/<domain>/")
 @requires_auth("user")
 def domain_records(domain):
+    domain = get_root_domain(domain)
     records = db.get_records_for_root_domain(domain, current_user.user_id)
     if len(records) == 0:
         abort(404)
@@ -157,7 +158,8 @@ def do_domain_records_new(form):
     if item is None:
         item = {
             "user_id": current_user.user_id,
-            "domain": form.domain.data
+            "domain": form.domain.data,
+            "live":False
         }
 
     suc, msg = form.type.data.validate_put(item, record_entry)
@@ -189,10 +191,11 @@ def domain_record_delete(domain, hostname, record=None):
         abort(404)
 
     if record is None:
-        if get_root_domain(hostname) + "." == hostname:
+        if get_root_domain(hostname) == hostname:
             db.put_record({
                 "domain": hostname,
-                "user_id": current_user.user_id
+                "user_id": current_user.user_id,
+                "live":False
             })
             flash("Cleared " + hostname + " (can't delete root domain!)", "success")
         else:
@@ -252,7 +255,7 @@ def domain_record_newedit(domain, hostname=None, record=None):
     elif form.validate_on_submit():
         suc, msg = do_domain_records_new(form)
         if suc:
-            return redirect(url_for("website.domain_records", domain=domain))
+            return redirect(url_for("website.domain_records", domain=get_root_domain(domain)))
         elif msg:
             flash(msg, "danger")
 
