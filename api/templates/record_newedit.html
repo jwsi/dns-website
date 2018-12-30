@@ -84,7 +84,8 @@ Welcome
 
 			for (var key in this.struct) {
 				this.enter.append("<input id='e"+ key + "' class='form-control col-sm-" +
-						fsize + "' placeholder='" + key + "'>");
+						fsize + "'" + ((this.struct[key] == Number) ? " type='number'" : "") +
+						" placeholder='" + key + "'>");
 				this.inputs[key] = this.enter.find("#e" + key);
 			}
 			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
@@ -126,6 +127,9 @@ Welcome
 			var ret = {};
 			for (let key in this.inputs) {
 				ret[key] = this.inputs[key].val();
+				if (this.struct[key] == Number) {
+					ret[key] = parseInt(ret[key]);
+				}
 			}
 
 			var rows = this.get_data();
