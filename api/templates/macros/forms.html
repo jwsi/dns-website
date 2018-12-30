@@ -13,6 +13,24 @@
 	</div>
 {%- endmacro %}
 
+{% macro render_select_field(field, label=None, label_visible=true, right_url=None, right_label=None, fieldclass=None, readonly=False) -%}
+	<div class="form-group {% if field.errors %}has-error{% endif %} {{ kwargs.pop('class_', '') }}">
+		{% if field.type != 'HiddenField' and label_visible %}
+			{% if not label and label != "" %}{% set label=field.label.text %}{% endif %}
+			{% if label %}<label for="{{ field.id }}">{{ label|safe }}</label>{% endif %}
+		{% endif %}
+		{% if readonly %}
+			<input type="hidden" name="{{ field.name }}" value="{{ field.data }}">
+		{% endif %}
+		{{ field(class_=fieldclass or 'form-control', disabled=readonly, **kwargs) }}
+		{% if field.errors %}
+			{% for e in field.errors %}
+				<p class="help-block">{{ e }}</p>
+			{% endfor %}
+		{% endif %}
+	</div>
+{%- endmacro %}
+
 {% macro render_checkbox_field(field, label=None) -%}
 	{% if not label %}{% set label=field.label.text %}{% endif %}
 	<div class="checkbox">

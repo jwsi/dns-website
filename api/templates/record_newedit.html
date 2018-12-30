@@ -7,12 +7,12 @@ Welcome
 {% block content %}
 <h1>{% if is_edit %}Edit{% else %}Add{% endif %} Record</h1>
 
-{% from "macros/forms.html" import render_field, render_submit_field, render_checkbox_field %}
+{% from "macros/forms.html" import render_field, render_submit_field, render_select_field %}
 <form method="POST" action="" enctype="multipart/form-data">
 	{{ form.hidden_tag() }}
 	<div class="row">
 	{{ render_field(form.domain, class_="col-sm-4", readonly=is_edit) }}
-	{{ render_field(form.type, class_="col-sm-4", readonly=is_edit) }}
+	{{ render_select_field(form.type, class_="col-sm-4", readonly=is_edit) }}
 	{{ render_field(form.ttl, class_="col-sm-4") }}
 	</div>
 	<div class="row soa" style="display:none;">
