@@ -7,8 +7,14 @@ Welcome
 {% block content %}
 <h1>{% if is_edit %}Edit{% else %}Add{% endif %} Record</h1>
 
+{% if not is_edit %}
+<p>
+	<b>Warning:</b> this will delete any records of the same type.
+</p>
+{% endif %}
+
 {% from "macros/forms.html" import render_field, render_submit_field, render_select_field %}
-<form method="POST" action="" enctype="multipart/form-data">
+<form method="POST" action="" enctype="multipart/form-data" style="display:inline;">
 	{{ form.hidden_tag() }}
 	<div class="row">
 	{{ render_field(form.domain, class_="col-sm-4", readonly=is_edit) }}
@@ -22,8 +28,19 @@ Welcome
 
 	{{ render_field(form.value) }}
 
+	<div class="py-3"></div>
+
 	{{ render_submit_field(form.submit) }}
 </form>
+
+{% if is_edit %}
+<form method="POST"
+		action="{{ url_for('website.domain_record_delete', domain=domain, hostname=hostname, record=record) }}"
+		style="display:inline;">
+	<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+	<input type="submit" name="delete" value="Delete" class="btn btn-danger">
+</form>
+{% endif %}
 
 {% endblock %}
 
@@ -72,7 +89,7 @@ Welcome
 						.map((key) => row[key])
 						.map((x) => "<td>" + x + "</td>")
 						.join("") +
-						"<td><a data-i=" + i + " class='delete-row btn btn-danger btn-sm'>X</a></td>" +
+						"<td><button data-i=" + i + " class='delete-row btn btn-danger btn-sm'>X</button></td>" +
 					"</tr>");
 			}
 

@@ -49,6 +49,15 @@ class DB:
         return self.records.put_item(Item=item)
 
 
+    def delete_record(self, domain, user_id):
+        return self.records.delete_item(
+            Key={
+                "domain": domain,
+                "user_id" : user_id
+            }
+        )
+
+
     def get_live_records_by_domain(self, domain):
         return self.records.scan(
             FilterExpression=Attr('domain').eq(domain) & Attr('live').eq(True)

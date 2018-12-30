@@ -29,9 +29,15 @@ Welcome
 					<a class="btn btn-sm btn-{{ btype }}" href="{{ url_for('website.domain_record_newedit', domain=domain, record=type.name, hostname=r.domain) }}">
 						{{ type.name }}
 					</a>
-				{% endfor %}
+				{% endfor %} |
 
-				<a class="btn btn-sm btn-default" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=r.domain) }}">+</a>
+				<a class="btn btn-sm btn-primary" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=r.domain) }}">Add</a>
+				<form method="POST"
+						action="{{ url_for('website.domain_record_delete', domain=domain, hostname=r.domain) }}"
+						style="display:inline;">
+					<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+					<input type="submit" name="delete" value="Delete" class="btn btn-sm btn-danger">
+				</form>
 			</div>
 		</div>
 	{% endfor %}
