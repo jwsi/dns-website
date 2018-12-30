@@ -67,9 +67,14 @@ def domain_new():
     if form.validate_on_submit():
         domain = get_root_domain(form.domain.data)
         records = db.get_records_for_root_domain(domain, current_user.user_id)
-        if len(records) == 0:
-            if domain[-1:] != ".":
-                domain = domain + "."
+        if domain[-1:] != ".":
+            domain = domain + "."
+
+        if len(records) > 0:
+            flash("Domain already exists", "warning")
+        elif len(db.get_live_records_by_domain(domain)) > 0:
+            flash("Domain already created by another user", "warning")
+        else:
 
             item = {
                 "domain":  domain,
@@ -84,8 +89,6 @@ def domain_new():
             db.put_record(item)
 
             return redirect(url_for("website.domain_records", domain=domain[:-1]))
-        else:
-            flash("Domain already exists", "warning")
 
     return render_template("domain_new.html", form=form)
 
@@ -98,7 +101,7 @@ def domain_check(domain):
         abort(404)
 
     try:
-        if not LiveChecker.check(root, domain):
+        if not LiveChecker.check(root, domain + "."):
             raise ControlledException(ReturnCode.UNKNOWN)
 
         root["live"] = True
