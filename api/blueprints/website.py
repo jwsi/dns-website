@@ -103,6 +103,9 @@ def domain_new():
 @website.route("/domains/<domain>/check/", methods=["POST"])
 @requires_auth("user")
 def domain_check(domain):
+    if domain != get_root_domain(domain):
+        abort(404)
+
     root = db.get_record(domain + ".", current_user.user_id)
     if root is None:
         abort(404)
@@ -176,13 +179,23 @@ def do_domain_records_new(domain, form):
 @website.route("/domains/<domain>/<hostname>/<record>/delete/", methods=["POST"])
 @requires_auth("user")
 def domain_record_delete(domain, hostname, record=None):
+    if domain != get_root_domain(domain):
+        abort(404)
+
     item = db.get_record(hostname, current_user.user_id)
     if item is None:
         abort(404)
 
     if record is None:
-        db.delete_record(hostname, current_user.user_id)
-        flash("Deleted " + hostname, "success")
+        if get_root_domain(hostname) + "." == hostname:
+            db.put_record({
+                "domain": hostname,
+                "user_id": current_user.user_id
+            })
+            flash("Cleared " + hostname + " (can't delete root domain!)", "success")
+        else:
+            db.delete_record(hostname, current_user.user_id)
+            flash("Deleted " + hostname, "success")
 
     else:
         record = RecordType.get(record)
@@ -202,6 +215,9 @@ def domain_record_delete(domain, hostname, record=None):
 @website.route("/domains/<domain>/<hostname>/<record>/edit/", methods=["GET", "POST"])
 @requires_auth("user")
 def domain_record_newedit(domain, hostname=None, record=None):
+    if domain != get_root_domain(domain):
+        abort(404)
+
     form = RecordForm(formdata=request.form)
 
     if record is not None:
