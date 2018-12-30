@@ -1,5 +1,6 @@
 import enum
 import re
+from decimal import Decimal
 
 retype = type(re.compile("hello, world"))
 ip_reg = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
@@ -30,12 +31,14 @@ class RecordType(enum.Enum):
             if schema == optstr:
                 return value is None or isinstance(value, str)
             elif isinstance(schema, dict) and isinstance(value, dict):
-                return all(k in value and __check_structure(value[k], schema[k]) for k in schema)
+                return all(__check_structure(value[k], schema[k]) for k in schema)
             elif isinstance(schema, list) and isinstance(value, list):
                 return all(__check_structure(c, schema[0]) for c in value)
             elif isinstance(schema, retype):
                 return schema.match(value)
             elif isinstance(schema, type):
+                if isinstance(value, Decimal) and schema is int:
+                    return value == int(value)
                 return isinstance(value, schema)
             else:
                 return False
