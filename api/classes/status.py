@@ -10,3 +10,4 @@ class ReturnCode(IntEnum):
     DOMAIN_NOT_FOUND = 100
     INCORRECT_GLUE = 101
     DOMAIN_ALREADY_LIVE = 102
+    UNKNOWN = 103

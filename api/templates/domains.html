@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}
-Welcome
+Domains
 {% endblock %}
 
 {% block content %}
+<a class="float-right btn btn-primary" href="{{ url_for('website.domain_new') }}">New</a>
 <h1>Domains</h1>
 
 

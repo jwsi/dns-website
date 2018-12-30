@@ -66,7 +66,7 @@ class RecordType(enum.Enum):
         return True, None
 
     @classmethod
-    def check_stucture_for_type(struct, type):
+    def check_stucture_for_type(cls, struct, type):
         return RecordType.get(type).check_structure(struct)
 
     @classmethod

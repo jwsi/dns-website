@@ -5,8 +5,43 @@ Welcome
 {% endblock %}
 
 {% block content %}
+
+{% if root_record and not root_record.live %}
+	<div class="alert alert-info">
+		<h2>Setup needed</h2>
+
+		<p>
+			Please add the following nameservers to your domain's registration:
+		</p>
+
+		<ul>
+			<li><pre>ns1.uh-dns.com.</pre></li>
+			<li><pre>ns2.uh-dns.com.</pre></li>
+		</ul>
+
+		<p>
+			Then click "Check"
+		</p>
+
+		<form method="POST" action="{{ url_for('website.domain_check', domain=domain) }}">
+			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+			<input type="submit" name="check" value="Check" class="btn btn-primary">
+		</form>
+	</div>
+{% endif %}
+
 <a class="float-right btn btn-primary" href="{{ url_for('website.domain_record_newedit', domain=domain) }}">New</a>
 <h1>Records</h1>
+
+{% if not root_record %}
+	<div class="alert alert-danger">
+		<a class="float-right btn btn-sm btn-danger" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=domain+'.') }}">
+			Create Record
+		</a>
+
+		<b>Unable to find a root record!</b>
+	</div>
+{% endif %}
 
 
 <div class="list-group">

@@ -1,13 +1,16 @@
 from flask import Blueprint, render_template, request, abort, flash, redirect, url_for
 from api.decorators.authentication import requires_auth
-from api.classes.db import db
+from api.classes.db import db, get_root_domain
 from api.classes.recordtype import RecordType
 from api.classes.customjsonencoder import CustomJSONEncoder
+from api.classes.livechecker import LiveChecker
+from api.classes.errors import ControlledException
+from api.classes.status import ReturnCode
 from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
 from wtforms.validators import InputRequired, Length
-import json
+import json, validators
 
 
 website = Blueprint('website', __name__)
@@ -38,16 +41,88 @@ def domain_records(domain):
     if len(records) == 0:
         abort(404)
 
+    root_record = None
+    for record in records:
+        if record["domain"] == domain + ".":
+            root_record = record
+
     def getRTypes(record):
         print(RecordType.choices())
         ret = [{ "name": key[0].name, "data": record[key[0].name]} for key in RecordType.choices() if key[0].name in record]
         return ret
 
-    return render_template("records.html", records=records, getRTypes=getRTypes, domain=domain)
+    return render_template("records.html", records=records, getRTypes=getRTypes, \
+            domain=domain, root_record=root_record)
 
+def Domain(form, field):
+    data = field.data
+    if data[-1:] == ".":
+        data = data[:-1]
+
+    if validators.domain(data) != True:
+        raise ValidationError("Invalid domain name")
+
+class DomainForm(FlaskForm):
+    domain = StringField("Domain", [InputRequired(), Length(1, 40), Domain])
+    submit = SubmitField("Save")
+
+
+@website.route("/domains/new/", methods=["GET", "POST"])
+@requires_auth("user")
+def domain_new():
+    form = DomainForm(formdata=request.form)
+    if form.validate_on_submit():
+        domain = get_root_domain(form.domain.data)
+        records = db.get_records_for_root_domain(domain, current_user.user_id)
+        if domain[-1:] != ".":
+            domain = domain + "."
+
+        if len(records) > 0:
+            flash("Domain already exists", "warning")
+        elif len(db.get_live_records_by_domain(domain)) > 0:
+            flash("Domain already created by another user", "warning")
+        else:
+
+            item = {
+                "domain":  domain,
+                "user_id": current_user.user_id,
+                "NS": { "ttl": 3600, "value": ["ns1.uh-dns.com.", "ns2.uh-dns.com."] },
+                "SOA": { "ttl": 900, "times": [2018122100,7200,900,1209600,86400], "mname": "ns1.uh-dns.com.", "rname": "engineering.ultra-horizon.com." },
+            }
+
+            assert(RecordType.NS.check_structure(item["NS"]))
+            assert(RecordType.SOA.check_structure(item["SOA"]))
+
+            db.put_record(item)
+
+            return redirect(url_for("website.domain_records", domain=domain[:-1]))
+
+    return render_template("domain_new.html", form=form)
+
+
+@website.route("/domains/<domain>/check/", methods=["POST"])
+@requires_auth("user")
+def domain_check(domain):
+    if domain != get_root_domain(domain):
+        abort(404)
+
+    root = db.get_record(domain + ".", current_user.user_id)
+    if root is None:
+        abort(404)
+
+    try:
+        if not LiveChecker.check(root, domain + "."):
+            raise ControlledException(ReturnCode.UNKNOWN)
+
+        root["live"] = True
+        db.put_record(root)
+    except ControlledException as e:
+        flash("Failed. Error: " + e.status.name, "danger")
+
+    return redirect(url_for("website.domain_records", domain=domain))
 
 class RecordForm(FlaskForm):
-    domain = StringField("Hostname", [InputRequired(), Length(1, 40)])
+    domain = StringField("Hostname", [InputRequired(), Length(1, 40), Domain])
     type   = SelectField("Type", [InputRequired()], choices=RecordType.choices(), coerce=RecordType.coerce, default=RecordType.A)
     ttl    = IntegerField("TTL", default=10)
     value  = StringField("Value", [Length(0, 1000)])
@@ -104,13 +179,23 @@ def do_domain_records_new(domain, form):
 @website.route("/domains/<domain>/<hostname>/<record>/delete/", methods=["POST"])
 @requires_auth("user")
 def domain_record_delete(domain, hostname, record=None):
+    if domain != get_root_domain(domain):
+        abort(404)
+
     item = db.get_record(hostname, current_user.user_id)
     if item is None:
         abort(404)
 
     if record is None:
-        db.delete_record(hostname, current_user.user_id)
-        flash("Deleted " + hostname, "success")
+        if get_root_domain(hostname) + "." == hostname:
+            db.put_record({
+                "domain": hostname,
+                "user_id": current_user.user_id
+            })
+            flash("Cleared " + hostname + " (can't delete root domain!)", "success")
+        else:
+            db.delete_record(hostname, current_user.user_id)
+            flash("Deleted " + hostname, "success")
 
     else:
         record = RecordType.get(record)
@@ -130,6 +215,9 @@ def domain_record_delete(domain, hostname, record=None):
 @website.route("/domains/<domain>/<hostname>/<record>/edit/", methods=["GET", "POST"])
 @requires_auth("user")
 def domain_record_newedit(domain, hostname=None, record=None):
+    if domain != get_root_domain(domain):
+        abort(404)
+
     form = RecordForm(formdata=request.form)
 
     if record is not None:
@@ -162,8 +250,7 @@ def domain_record_newedit(domain, hostname=None, record=None):
                 else:
                     form.value.data = json.dumps(item[type.name], cls=CustomJSONEncoder)
 
-
-    else:
+    elif form.validate_on_submit():
         suc, msg = do_domain_records_new(domain, form)
         if suc:
             return redirect(url_for("website.domain_records", domain=domain))

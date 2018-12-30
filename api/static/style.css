@@ -21,3 +21,19 @@
 	border: 1px solid rgba(0, 0, 0, 0.125);
 	border-radius: 0.25rem;
 }
+
+.alert .btn {
+    text-decoration: none;
+}
+
+.alert .btn.float-right {
+    margin-top: -0.25rem;
+}
+
+.alert h2, .alert h3, .alert h4 {
+    font-size: 160%;
+}
+
+.alert pre {
+    color: white;
+}
