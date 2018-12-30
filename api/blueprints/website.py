@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, abort, flash, redirect, u
 from api.decorators.authentication import requires_auth
 from api.classes.db import db
 from api.classes.recordtype import RecordType
+from api.classes.customjsonencoder import CustomJSONEncoder
 from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
@@ -46,7 +47,7 @@ def domain_records(domain):
 
 
 class RecordForm(FlaskForm):
-    domain = StringField("Domain", [InputRequired(), Length(1, 40)])
+    domain = StringField("Hostname", [InputRequired(), Length(1, 40)])
     type   = SelectField("Type", [InputRequired()], choices=RecordType.choices(), coerce=RecordType.coerce, default=RecordType.A)
     ttl    = IntegerField("TTL", default=10)
     value  = StringField("Value", [Length(0, 1000)])
@@ -71,7 +72,6 @@ def do_domain_records_new(domain, form):
     if type == "SOA":
         record_entry["mname"] = form.mname.data
         record_entry["rname"] = form.rname.data
-
 
     # Validate record entry
     print(record_entry)
@@ -100,12 +100,41 @@ def do_domain_records_new(domain, form):
 
 
 @website.route("/domains/<domain>/new/", methods=["GET", "POST"])
+@website.route("/domains/<domain>/<hostname>/new/", methods=["GET", "POST"])
+@website.route("/domains/<domain>/<hostname>/<record>/edit/", methods=["GET", "POST"])
 @requires_auth("user")
-def domain_records_new(domain):
+def domain_record_newedit(domain, hostname=None, record=None):
     form = RecordForm(formdata=request.form)
 
+    if record is not None:
+        form.domain.data = hostname
+        form.type.data = RecordType.get(record)
+        if form.type.data is None:
+            abort(404)
+
     if request.method == "GET":
-        form.domain.data = domain
+        form.domain.data = hostname or domain
+        if form.domain.data[-1:] != ".":
+            form.domain.data = form.domain.data + "."
+
+        if record is not None:
+            item = db.get_record(form.domain.data, current_user.user_id)
+            if item is None:
+                abort(404)
+
+            type = form.type.data
+
+            if type.name in item:
+                form.ttl.data = item[type.name]["ttl"]
+
+                if type == RecordType.CNAME:
+                    form.value.data = item[type.name]["domain"]
+                elif type == RecordType.TXT:
+                    form.value.data = item[type.name]["value"]
+                else:
+                    form.value.data = json.dumps(item[type.name], cls=CustomJSONEncoder)
+
+
     else:
         suc, msg = do_domain_records_new(domain, form)
         if suc:
@@ -113,4 +142,4 @@ def domain_records_new(domain):
         elif msg:
             flash(msg, "danger")
 
-    return render_template("record_newedit.html", form=form)
+    return render_template("record_newedit.html", form=form, is_edit=record is not None)
