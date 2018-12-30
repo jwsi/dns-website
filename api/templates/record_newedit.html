@@ -59,17 +59,24 @@ Welcome
 			field.parent().find(".table").remove();
 			this.acc = field.parent().append("<table class='table'><tr>" +
 				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
-				"</tr></table>").find(".table");
+				"<th></th></tr></table>").find(".table");
 
 			var rows = this.get_data();
-			for (let row of rows) {
+			for (let i = 0; i < rows.length; i++) {
+				let row = rows[i];
 				this.acc.append("<tr>" +
 					Object.keys(this.struct)
 						.map((key) => row[key])
 						.map((x) => "<td>" + x + "</td>")
 						.join("") +
+						"<td><a data-i=" + i + " class='delete-row btn btn-danger btn-sm'>X</a></td>" +
 					"</tr>");
 			}
+
+			var me = this;
+			this.acc.find(".delete-row").click(function() {
+				me.delete_row($(this).attr("data-i"));
+			});
 		}
 
 		buildInputs() {
@@ -132,10 +139,12 @@ Welcome
 				}
 			}
 
-			var rows = this.get_data();
-			rows.push(ret);
-			this.set_data(rows);
+		}
 
+		delete_row(i) {
+			var rows = this.get_data();
+			rows.splice(i, 1);
+			this.set_data(rows);
 			this.build();
 		}
 
