@@ -161,7 +161,7 @@ def do_domain_records_new(form):
         item = {
             "user_id": current_user.user_id,
             "domain": form.domain.data,
-            "live":False
+            "live": False
         }
 
     suc, msg = form.type.data.validate_put(item, record_entry)
@@ -197,7 +197,9 @@ def domain_record_delete(domain, hostname, record=None):
             db.put_record({
                 "domain": hostname,
                 "user_id": current_user.user_id,
-                "live":False
+                "live": False,
+                "NS": {"ttl": 3600, "value": ["ns1.uh-dns.com.", "ns2.uh-dns.com."]},
+                "SOA": {"ttl": 900, "times": [2018122100, 7200, 900, 1209600, 86400], "mname": "ns1.uh-dns.com.", "rname": "engineering.ultra-horizon.com."},
             })
             flash("Cleared " + hostname + " (can't delete root domain!)", "success")
         else:
