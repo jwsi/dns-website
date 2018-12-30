@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, abort, flash, redirect, url_for
 from api.decorators.authentication import requires_auth
-from api.classes.db import db
+from api.classes.db import db, get_root_domain
 from api.classes.recordtype import RecordType
 from api.classes.customjsonencoder import CustomJSONEncoder
 from api import menu, current_user
@@ -44,6 +44,42 @@ def domain_records(domain):
         return ret
 
     return render_template("records.html", records=records, getRTypes=getRTypes, domain=domain)
+
+
+class DomainForm(FlaskForm):
+    domain = StringField("Domain", [InputRequired(), Length(1, 40)])
+    submit = SubmitField("Save")
+
+
+@website.route("/domains/new/", methods=["GET", "POST"])
+@requires_auth("user")
+def domain_new():
+    form = DomainForm(formdata=request.form)
+    if form.validate_on_submit():
+        domain = get_root_domain(form.domain.data)
+        records = db.get_records_for_root_domain(domain, current_user.user_id)
+        if len(records) == 0:
+            if domain[-1:] != ".":
+                domain = domain + "."
+
+            item = {
+                "domain":  domain,
+                "user_id": current_user.user_id,
+                "NS": { "ttl": 3600, "value": ["ns1.uh-dns.com.", "ns2.uh-dns.com."] },
+                "SOA": { "ttl": 900, "times": [2018122100,7200,900,1209600,86400], "mname": "ns1.uh-dns.com.", "rname": "engineering.ultra-horizon.com." },
+            }
+
+            assert(RecordType.NS.check_structure(item["NS"]))
+            assert(RecordType.SOA.check_structure(item["SOA"]))
+
+            db.put_record(item)
+
+            return redirect(url_for("website.domain_records", domain=domain[:-1]))
+        else:
+            flash("Domain already exists", "warning")
+
+    return render_template("domain_new.html", form=form)
+
 
 
 class RecordForm(FlaskForm):
@@ -162,8 +198,7 @@ def domain_record_newedit(domain, hostname=None, record=None):
                 else:
                     form.value.data = json.dumps(item[type.name], cls=CustomJSONEncoder)
 
-
-    else:
+    elif form.validate_on_submit():
         suc, msg = do_domain_records_new(domain, form)
         if suc:
             return redirect(url_for("website.domain_records", domain=domain))
