@@ -104,6 +104,8 @@ def domain_new():
 @website.route("/domains/<domain>/check/", methods=["POST"])
 @requires_auth("user")
 def domain_check(domain):
+    if domain != get_root_domain(domain):
+        abort(404)
     root = db.get_record(domain, current_user.user_id)
     if root is None:
         abort(404)
