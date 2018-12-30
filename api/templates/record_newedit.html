@@ -44,6 +44,9 @@ Welcome
 			this.field = field;
 			this.container_key = container_key || "value";
 			this.single_element = (Object.keys(struct).length == 1) ? Object.keys(struct)[0] : null;
+
+			this.set_data(this.get_data());
+
 			this.field.hide();
 			this.build();
 		}
