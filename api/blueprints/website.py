@@ -10,7 +10,7 @@ from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
 from wtforms.validators import InputRequired, Length
-import json, validators
+import json, validators, tldextract
 
 
 website = Blueprint('website', __name__)
@@ -174,7 +174,7 @@ def do_domain_records_new(form):
     # Check whether subdomain should be marked live.
     root_domains = db.get_root_domains(current_user.user_id)
     domain = form.domain.data
-    while domain.count(".") > 2:  # Only perform recursive search if . occurs more than once. E.g. test.uh-dns.com.
+    while tldextract.extract(domain).subdomain != "":  # Perform recursive search up to the TLD.
         domain = domain.split(".", 1)[1:][0]
         if domain in root_domains:
             record = db.get_record(domain, current_user.user_id)
