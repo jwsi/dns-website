@@ -79,9 +79,15 @@ def do_domain_records_new(domain, form):
         return False, "Invalid record entry"
 
     # Retrieve record
+    if form.domain.data[-1:] != ".":
+        form.domain.data = form.domain.data + "."
+
     item = db.get_record(form.domain.data, current_user.user_id)
     if item is None:
-        return False, "Unable to find a record"
+        item = {
+            "user_id": current_user.user_id,
+            "domain": form.domain.data
+        }
 
     if not form.type.data.validate_put(item, record_entry):
         return False, "Validation failed."
