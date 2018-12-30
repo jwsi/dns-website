@@ -1,4 +1,4 @@
-from flask import session, redirect
+from flask import session, redirect, url_for, request
 from functools import wraps
 
 
@@ -13,7 +13,7 @@ def requires_auth(tier):
         def decorated(*args, **kwargs):
             if 'profile' not in session or tier not in session["scopes"]:
                 # Redirect to Login page here
-                return redirect('/login')
+                return redirect(url_for('authentication.login', redirect_uri=request.url))
             return f(*args, **kwargs)
         return decorated
     return decorator

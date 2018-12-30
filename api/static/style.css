@@ -1,3 +1,21 @@
+.bg-primary {
+    background-color: #0C2450 !important;
+}
+
+.btn-primary {
+    background-color: #0C2450;
+}
+
+#logo {
+    height: 45px;
+}
+
+@media (min-width: 576px) {
+    .jumbotron {
+        padding: 2rem 2rem;
+    }
+}
+
 .sink {
 	padding: 1rem;
 	border: 1px solid rgba(0, 0, 0, 0.125);
