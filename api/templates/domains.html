@@ -10,7 +10,7 @@ Welcome
 
 <div class="list-group">
 	{% for d in domains %}
-		<a href="{{ url_for('website.site_records', domain=d) }}"
+		<a href="{{ url_for('website.domain_records', domain=d) }}"
 				class="list-group-item list-group-item-action">
 			{{ d }}
 		</a>

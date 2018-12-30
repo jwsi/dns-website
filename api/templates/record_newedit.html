@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}
+Welcome
+{% endblock %}
+
+{% block content %}
+<h1>{% if is_edit %}Edit{% else %}Add{% endif %} Record</h1>
+
+{% from "macros/forms.html" import render_field, render_submit_field, render_checkbox_field %}
+<form method="POST" action="" enctype="multipart/form-data">
+	{{ form.hidden_tag() }}
+	<div class="row">
+	{{ render_field(form.domain, class_="col-sm-4", readonly=is_edit) }}
+	{{ render_field(form.type, class_="col-sm-4", readonly=is_edit) }}
+	{{ render_field(form.ttl, class_="col-sm-4") }}
+	</div>
+	<div class="row soa" style="display:none;">
+		{{ render_field(form.mname, class_="col-sm-6") }}
+		{{ render_field(form.rname, class_="col-sm-6") }}
+	</div>
+
+	{{ render_field(form.value) }}
+
+	{{ render_submit_field(form.submit) }}
+</form>
+
+{% endblock %}
+
+
+{% block scriptextra %}
+<script>
+	class Plaintext {
+		constructor(type, field) {
+			this.type = type;
+		}
+		remove() {}
+	}
+
+	class TableWidget {
+		constructor(type, field, struct, container_key) {
+			this.type = type;
+			this.struct = struct;
+			this.field = field;
+			this.container_key = container_key || "value";
+			this.single_element = (Object.keys(struct).length == 1) ? Object.keys(struct)[0] : null;
+			this.field.hide();
+			this.build();
+		}
+
+		build() {
+			this.buildTable();
+			this.buildInputs();
+		}
+
+		buildTable() {
+			var field = this.field;
+
+			field.parent().find(".table").remove();
+			this.acc = field.parent().append("<table class='table'><tr>" +
+				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
+				"</tr></table>").find(".table");
+
+			var rows = this.get_data();
+			for (let row of rows) {
+				this.acc.append("<tr>" +
+					Object.keys(this.struct)
+						.map((key) => row[key])
+						.map((x) => "<td>" + x + "</td>")
+						.join("") +
+					"</tr>");
+			}
+		}
+
+		buildInputs() {
+			this.field.parent().find(".row").remove();
+			this.enter = this.field.parent().append("<div class='row px-3'></div>").find(".row");
+
+			var numStructs = Object.keys(this.struct).length;
+			var fsize = Math.floor(11 / numStructs);
+			var bsize   = 12 - fsize*numStructs;
+
+			this.inputs = {};
+
+			for (var key in this.struct) {
+				this.enter.append("<input id='e"+ key + "' class='form-control col-sm-" +
+						fsize + "'" + ((this.struct[key] == Number) ? " type='number'" : "") +
+						" placeholder='" + key + "'>");
+				this.inputs[key] = this.enter.find("#e" + key);
+			}
+			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
+			this.add   = this.enter.find("button");
+			this.add.click(this.on_add.bind(this));
+		}
+
+		get_raw_data() {
+			try {
+				return JSON.parse(this.field.val())[this.container_key];
+			} catch {
+				return [];
+			}
+		}
+
+		set_raw_data(data) {
+			var val = {};
+			val[this.container_key] = data;
+			this.field.val(JSON.stringify(val));
+		}
+
+		get_data() {
+			var retval = this.get_raw_data();
+			if (this.single_element) {
+				return retval.map((x) => { return { [this.single_element]: x } });
+			} else {
+				return retval;
+			}
+		}
+
+		set_data(data) {
+			if (this.single_element) {
+				data = data.map((x) => x[this.single_element]);
+			}
+			this.set_raw_data(data);
+		}
+
+		on_add() {
+			var ret = {};
+			for (let key in this.inputs) {
+				ret[key] = this.inputs[key].val();
+				if (this.struct[key] == Number) {
+					ret[key] = parseInt(ret[key]);
+				}
+			}
+
+			var rows = this.get_data();
+			rows.push(ret);
+			this.set_data(rows);
+
+			this.build();
+		}
+
+		remove() {
+			this.acc.remove();
+			this.enter.remove();
+			this.field.show();
+		}
+	}
+
+	class SOAWidget extends TableWidget {
+		constructor(type, field) {
+			super(type, field, { time: Number }, "times");
+
+			$(".soa").show();
+		}
+		remove() {
+			super.remove();
+			$(".soa").hide();
+		}
+	}
+
+	(function() {
+		var field  = $("#value");
+		var etype  = $("#type");
+		var widget = null;
+
+		function init() {
+			var type = etype.val()
+			if (widget) {
+				if (widget.type == type) {
+					return;
+				}
+
+				widget.remove();
+				field.val("");
+			}
+
+			if (type == "A" || type == "AAAA") {
+				widget = new TableWidget(type, field, { ip: String });
+			} else if (type == "CNAME" || type == "TXT") {
+				widget = new Plaintext(type, field);
+			} else if (type == "CAA") {
+				widget = new TableWidget(type, field, { flags: Number, tag: String, value: String });
+			} else if (type == "MX") {
+				widget = new TableWidget(type, field, { domain: String, preference: Number });
+			} else if (type == "NAPTR") {
+				widget = new TableWidget(type, field, { order: Number, preference: Number, flags: String, service: String, regexp: String, replacement: String });
+			} else if (type == "NS") {
+				widget = new TableWidget(type, field, { domain: String });
+			} else if (type == "SOA") {
+				widget = new SOAWidget(type, field);
+			} else if (type == "SRV") {
+				widget = new TableWidget(type, field, { priority: Number, weight: Number, port: Number, target: String });
+			} else {
+				alert("Unknown type! " + type);
+			}
+		}
+
+		etype.change(init);
+		init();
+	})();
+</script>
+{% endblock %}

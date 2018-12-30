@@ -5,13 +5,15 @@ Welcome
 {% endblock %}
 
 {% block content %}
+<a class="float-right btn btn-primary" href="{{ url_for('website.domain_record_newedit', domain=domain) }}">New</a>
 <h1>Records</h1>
 
 
 <div class="list-group">
 	{% for r in records %}
-		<a href="#" class="list-group-item list-group-item-action">
+		<div href="#" class="list-group-item">
 			{{ r.domain }}
+
 			<div class="float-right">
 				{% for type in getRTypes(r) %}
 					{% if type.name in ['A','AAAA','CNAME'] %}
@@ -24,13 +26,14 @@ Welcome
 						{% set btype="secondary" %}
 					{% endif %}
 
-					<span class="badge badge-{{ btype }}">
+					<a class="btn btn-sm btn-{{ btype }}" href="{{ url_for('website.domain_record_newedit', domain=domain, record=type.name, hostname=r.domain) }}">
 						{{ type.name }}
-					</span>
+					</a>
 				{% endfor %}
+
+				<a class="btn btn-sm btn-default" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=r.domain) }}">+</a>
 			</div>
-		</a>
+		</div>
 	{% endfor %}
 </div>
 {% endblock %}
-<!doctype html>

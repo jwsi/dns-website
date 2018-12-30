@@ -15,3 +15,9 @@
         padding: 2rem 2rem;
     }
 }
+
+.sink {
+	padding: 1rem;
+	border: 1px solid rgba(0, 0, 0, 0.125);
+	border-radius: 0.25rem;
+}

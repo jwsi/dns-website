@@ -2,43 +2,13 @@ import socket, dnslib
 from flask import Blueprint, request, jsonify, abort
 from api import current_user
 from api.classes.db import db
+from api.classes.recordtype import RecordType
 from api.classes.errors import ControlledException
 from api.classes.status import ReturnCode
 from api.decorators.authentication import requires_auth
 
 
 api = Blueprint('api', __name__)
-optstr = "OPTSTR"
-
-ENTRY_TYPES = {
-    "A":     { "ttl": int, "value": [str] },
-    "AAAA":  { "ttl": int, "value": [str] },
-    "CAA":   { "ttl": int, "value": [{"flags": int, "tag": str, "value": str }]},
-    "CNAME": { "ttl": int, "domain": str },
-    "MX":    { "ttl": int, "value": [{ "domain": str, "preference": int }] },
-    "NAPTR": { "ttl": int, "value": [{ "order": int, "preference": int, "flags": str, "service": str, "regexp": optstr, "replacement": str }]},
-    "NS":    { "ttl": int, "value": [str] },
-    "SOA":   { "ttl": int, "times": [int], "mname": str, "rname": str },
-    "SRV":   { "ttl": int, "value": [{ "priority": int, "weight": int, "port": int, "target": str }] },
-    "TXT":   { "ttl": int, "value": str },
-}
-
-
-def check_structure(value, schema):
-    if schema == optstr:
-        return value is None or isinstance(value, str)
-    elif isinstance(schema, dict) and isinstance(value, dict):
-        return all(k in value and check_structure(value[k], schema[k]) for k in schema)
-    elif isinstance(schema, list) and isinstance(value, list):
-        return all(check_structure(c, schema[0]) for c in value)
-    elif isinstance(schema, type):
-        return isinstance(value, schema)
-    else:
-        return False
-
-
-def check_stucture_for_type(struct, type):
-    return check_structure(struct, ENTRY_TYPES[type])
 
 
 @api.route("/r/")
@@ -62,7 +32,7 @@ def record(domain):
 @requires_auth("user")
 def record_entry(domain, type):
     if request.method == "GET":
-        if type not in ENTRY_TYPES:
+        if type not in RecordType:
             abort(404)
 
         item = db.get_record(domain, current_user.user_id)
@@ -71,7 +41,7 @@ def record_entry(domain, type):
 
         return jsonify(item[type])
     else:
-        if type not in ENTRY_TYPES:
+        if type not in RecordType:
             abort(404)
 
         item = db.get_record(domain, current_user.user_id)
@@ -79,7 +49,7 @@ def record_entry(domain, type):
             abort(404)
 
         item[type] = request.get_json()
-        if not check_stucture_for_type(item[type], type):
+        if not RecordType.check_stucture_for_type(item[type], type):
             abort(400)
 
         ret = db.put_record(item)
