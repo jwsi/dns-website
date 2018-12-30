@@ -18,7 +18,7 @@ def records():
     return jsonify([{ "domain": r["domain"], "live": r["live"] } for r in resp])
 
 
-@api.route("/r/<domain>/", methods=["GET", "PUT"])
+@api.route("/r/<domain>/")
 @requires_auth("user")
 def record(domain):
     item = db.get_record(domain, current_user.user_id)
@@ -31,27 +31,30 @@ def record(domain):
 @api.route("/r/<domain>/<type>/", methods=["GET", "PUT"])
 @requires_auth("user")
 def record_entry(domain, type):
-    if request.method == "GET":
-        if type not in RecordType:
-            abort(404)
+    type = RecordType.get(type)
+    if type is None:
+        abort(404)
 
+    if request.method == "GET":
         item = db.get_record(domain, current_user.user_id)
         if item is None:
             abort(404)
 
         return jsonify(item[type])
-    else:
-        if type not in RecordType:
-            abort(404)
 
+    else:
         item = db.get_record(domain, current_user.user_id)
         if item is None:
             abort(404)
 
-        item[type] = request.get_json()
+        record_entry = request.get_json()
         if not RecordType.check_stucture_for_type(item[type], type):
             abort(400)
 
+        if not type.validate_put(item, record_entry):
+            abort(400)
+
+        item[type] = record_entry
         ret = db.put_record(item)
         return jsonify(ret)
 
