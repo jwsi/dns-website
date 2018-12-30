@@ -58,12 +58,12 @@ class RecordType(enum.Enum):
         if self == RecordType.CNAME:
             for other in RecordType:
                 if other != RecordType.CNAME and other.name in record:
-                    return False
+                    return False, "Unable to add CNAME record when other records exist for hostname"
 
         elif "CNAME" in record:
-            return False
+            return False, "Unable to add record as a CNAME record exists on hostname, please delete the CNAME record first"
 
-        return True
+        return True, None
 
     @classmethod
     def check_stucture_for_type(struct, type):

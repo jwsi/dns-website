@@ -52,7 +52,7 @@ class RecordForm(FlaskForm):
     ttl    = IntegerField("TTL", default=10)
     value  = StringField("Value", [Length(0, 1000)])
     mname  = StringField("MNAME (Primary Master Nameserver)", [Length(0, 1000)])
-    rname  = StringField("RNAME (Email address)", [Length(0, 1000)])
+    rname  = StringField("RNAME (Email address with @ replaced with .)", [Length(0, 1000)])
     submit = SubmitField("Save")
 
 
@@ -89,8 +89,9 @@ def do_domain_records_new(domain, form):
             "domain": form.domain.data
         }
 
-    if not form.type.data.validate_put(item, record_entry):
-        return False, "Validation failed."
+    suc, msg = form.type.data.validate_put(item, record_entry)
+    if not suc:
+        return False, msg
 
     # Add
     item[form.type.data.name] = record_entry
@@ -126,6 +127,8 @@ def domain_record_newedit(domain, hostname=None, record=None):
 
             if type.name in item:
                 form.ttl.data = item[type.name]["ttl"]
+                form.mname.data = item[type.name].get("mname")
+                form.rname.data = item[type.name].get("rname")
 
                 if type == RecordType.CNAME:
                     form.value.data = item[type.name]["domain"]
