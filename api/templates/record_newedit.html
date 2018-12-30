@@ -7,8 +7,14 @@ Welcome
 {% block content %}
 <h1>{% if is_edit %}Edit{% else %}Add{% endif %} Record</h1>
 
+{% if not is_edit %}
+<p>
+	<b>Warning:</b> this will delete any records of the same type.
+</p>
+{% endif %}
+
 {% from "macros/forms.html" import render_field, render_submit_field, render_select_field %}
-<form method="POST" action="" enctype="multipart/form-data">
+<form method="POST" action="" enctype="multipart/form-data" style="display:inline;">
 	{{ form.hidden_tag() }}
 	<div class="row">
 	{{ render_field(form.domain, class_="col-sm-4", readonly=is_edit) }}
@@ -22,8 +28,19 @@ Welcome
 
 	{{ render_field(form.value) }}
 
+	<div class="py-3"></div>
+
 	{{ render_submit_field(form.submit) }}
 </form>
+
+{% if is_edit %}
+<form method="POST"
+		action="{{ url_for('website.domain_record_delete', domain=domain, hostname=hostname, record=record) }}"
+		style="display:inline;">
+	<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+	<input type="submit" name="delete" value="Delete" class="btn btn-danger">
+</form>
+{% endif %}
 
 {% endblock %}
 
@@ -44,6 +61,7 @@ Welcome
 			this.field = field;
 			this.container_key = container_key || "value";
 			this.single_element = (Object.keys(struct).length == 1) ? Object.keys(struct)[0] : null;
+			this.set_data(this.get_data());
 			this.field.hide();
 			this.build();
 		}
@@ -59,17 +77,24 @@ Welcome
 			field.parent().find(".table").remove();
 			this.acc = field.parent().append("<table class='table'><tr>" +
 				Object.keys(this.struct).map((x) => { return "<th>" + x + "</th>"}).join("") +
-				"</tr></table>").find(".table");
+				"<th></th></tr></table>").find(".table");
 
 			var rows = this.get_data();
-			for (let row of rows) {
+			for (let i = 0; i < rows.length; i++) {
+				let row = rows[i];
 				this.acc.append("<tr>" +
 					Object.keys(this.struct)
 						.map((key) => row[key])
 						.map((x) => "<td>" + x + "</td>")
 						.join("") +
+						"<td><button data-i=" + i + " class='delete-row btn btn-danger btn-sm' type='button'>X</button></td>" +
 					"</tr>");
 			}
+
+			var me = this;
+			this.acc.find(".delete-row").click(function() {
+				me.delete_row($(this).attr("data-i"));
+			});
 		}
 
 		buildInputs() {
@@ -88,8 +113,8 @@ Welcome
 						" placeholder='" + key + "'>");
 				this.inputs[key] = this.enter.find("#e" + key);
 			}
-			this.enter.append("<button class='btn btn-primary col-sm-" + bsize + "'>Add</button>")
-			this.add   = this.enter.find("button");
+			this.enter.append("<button class='add-row btn btn-primary col-sm-" + bsize + "' type='button'>Add</button>")
+			this.add   = this.enter.find(".add-row");
 			this.add.click(this.on_add.bind(this));
 		}
 
@@ -135,7 +160,13 @@ Welcome
 			var rows = this.get_data();
 			rows.push(ret);
 			this.set_data(rows);
+			this.build();
+		}
 
+		delete_row(i) {
+			var rows = this.get_data();
+			rows.splice(i, 1);
+			this.set_data(rows);
 			this.build();
 		}
 

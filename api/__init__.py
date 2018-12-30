@@ -1,11 +1,13 @@
 import os
 from flask import Flask, jsonify, session
 import flask_menu as menu
+from flask_wtf.csrf import CSRFProtect
 
 # Define the Flask name as "app".
 app = Flask(__name__)
 application = app
 menu.Menu(app=app)
+csrf = CSRFProtect(app)
 
 
 from .classes.oauth import Authentication

@@ -54,7 +54,7 @@
 {% macro render_submit_field(field, label=None, tabindex=None) -%}
 	{% if not label %}{% set label=field.label.text %}{% endif %}
 	{#<button type="submit" class="form-control btn btn-default btn-primary">{{label}}</button>#}
-	<input type="submit" value="{{label}}" class="btn btn-primary"
+	<input type="submit" value="{{label}}" class="btn btn-primary px-5"
 		   {% if tabindex %}tabindex="{{ tabindex }}"{% endif %}
 		   >
 {%- endmacro %}

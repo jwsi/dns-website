@@ -100,6 +100,31 @@ def do_domain_records_new(domain, form):
     return True, None
 
 
+@website.route("/domains/<domain>/<hostname>/delete/", methods=["POST"])
+@website.route("/domains/<domain>/<hostname>/<record>/delete/", methods=["POST"])
+@requires_auth("user")
+def domain_record_delete(domain, hostname, record=None):
+    item = db.get_record(hostname, current_user.user_id)
+    if item is None:
+        abort(404)
+
+    if record is None:
+        db.delete_record(hostname, current_user.user_id)
+        flash("Deleted " + hostname, "success")
+
+    else:
+        record = RecordType.get(record)
+        if record is None:
+            abort(404)
+
+        del item[record.name]
+        db.put_record(item)
+
+        flash("Deleted " + record.name + " from " + hostname, "success")
+
+    return redirect(url_for("website.domain_records", domain=domain))
+
+
 @website.route("/domains/<domain>/new/", methods=["GET", "POST"])
 @website.route("/domains/<domain>/<hostname>/new/", methods=["GET", "POST"])
 @website.route("/domains/<domain>/<hostname>/<record>/edit/", methods=["GET", "POST"])
@@ -145,4 +170,5 @@ def domain_record_newedit(domain, hostname=None, record=None):
         elif msg:
             flash(msg, "danger")
 
-    return render_template("record_newedit.html", form=form, is_edit=record is not None)
+    return render_template("record_newedit.html", form=form, \
+        domain=domain, hostname=hostname, record=record, is_edit=record is not None)
