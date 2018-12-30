@@ -10,7 +10,7 @@ from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
 from wtforms.validators import InputRequired, Length
-import json
+import json, validators
 
 
 website = Blueprint('website', __name__)
@@ -54,9 +54,16 @@ def domain_records(domain):
     return render_template("records.html", records=records, getRTypes=getRTypes, \
             domain=domain, root_record=root_record)
 
+def Domain(form, field):
+    data = field.data
+    if data[-1:] == ".":
+        data = data[:-1]
+
+    if validators.domain(data) != True:
+        raise ValidationError("Invalid domain name")
 
 class DomainForm(FlaskForm):
-    domain = StringField("Domain", [InputRequired(), Length(1, 40)])
+    domain = StringField("Domain", [InputRequired(), Length(1, 40), Domain])
     submit = SubmitField("Save")
 
 
@@ -112,7 +119,7 @@ def domain_check(domain):
     return redirect(url_for("website.domain_records", domain=domain))
 
 class RecordForm(FlaskForm):
-    domain = StringField("Hostname", [InputRequired(), Length(1, 40)])
+    domain = StringField("Hostname", [InputRequired(), Length(1, 40), Domain])
     type   = SelectField("Type", [InputRequired()], choices=RecordType.choices(), coerce=RecordType.coerce, default=RecordType.A)
     ttl    = IntegerField("TTL", default=10)
     value  = StringField("Value", [Length(0, 1000)])

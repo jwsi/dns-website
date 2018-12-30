@@ -6,3 +6,4 @@ Flask-WTF==0.14.2
 pipdeptree==0.13.1
 tldextract==2.2.0
 dnslib==0.9.7
+validators==0.12.3

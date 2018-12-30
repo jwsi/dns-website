@@ -1,5 +1,6 @@
-import boto3, tldextract
+import boto3, tldextract, validators
 from boto3.dynamodb.conditions import Attr
+from .recordtype import RecordType
 
 
 def get_root_domain(url):
@@ -46,6 +47,13 @@ class DB:
         :param item: The item to put. Must include a valid primary key (user_id+domain).
         :return: the response from dynamoDB
         """
+        for type in RecordType:
+            if type.name in item:
+                assert(type.check_structure(item[type.name]))
+
+        # print(item["domain"])
+        assert(item["domain"][-1:] == "." and validators.domain(item["domain"][:-1]) == True)
+
         return self.records.put_item(Item=item)
 
 
