@@ -3,6 +3,9 @@ from api.decorators.authentication import requires_auth
 from api.classes.db import db, get_root_domain
 from api.classes.recordtype import RecordType
 from api.classes.customjsonencoder import CustomJSONEncoder
+from api.classes.livechecker import LiveChecker
+from api.classes.errors import ControlledException
+from api.classes.status import ReturnCode
 from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
@@ -38,12 +41,18 @@ def domain_records(domain):
     if len(records) == 0:
         abort(404)
 
+    root_record = None
+    for record in records:
+        if record["domain"] == domain + ".":
+            root_record = record
+
     def getRTypes(record):
         print(RecordType.choices())
         ret = [{ "name": key[0].name, "data": record[key[0].name]} for key in RecordType.choices() if key[0].name in record]
         return ret
 
-    return render_template("records.html", records=records, getRTypes=getRTypes, domain=domain)
+    return render_template("records.html", records=records, getRTypes=getRTypes, \
+            domain=domain, root_record=root_record)
 
 
 class DomainForm(FlaskForm):
@@ -81,6 +90,23 @@ def domain_new():
     return render_template("domain_new.html", form=form)
 
 
+@website.route("/domains/<domain>/check/", methods=["POST"])
+@requires_auth("user")
+def domain_check(domain):
+    root = db.get_record(domain + ".", current_user.user_id)
+    if root is None:
+        abort(404)
+
+    try:
+        if not LiveChecker.check(root, domain):
+            raise ControlledException(ReturnCode.UNKNOWN)
+
+        root["live"] = True
+        db.put_record(root)
+    except ControlledException as e:
+        flash("Failed. Error: " + e.status.name, "danger")
+
+    return redirect(url_for("website.domain_records", domain=domain))
 
 class RecordForm(FlaskForm):
     domain = StringField("Hostname", [InputRequired(), Length(1, 40)])
