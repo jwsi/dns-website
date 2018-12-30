@@ -5,7 +5,7 @@ from .recordtype import RecordType
 
 def get_root_domain(url):
     extracted = tldextract.extract(url)
-    return '{}.{}'.format(extracted.domain, extracted.suffix)
+    return '{}.{}.'.format(extracted.domain, extracted.suffix)
 
 
 class DB:
@@ -51,7 +51,6 @@ class DB:
             if type.name in item:
                 assert(type.check_structure(item[type.name]))
 
-        # print(item["domain"])
         assert(item["domain"][-1:] == "." and validators.domain(item["domain"][:-1]) == True)
 
         return self.records.put_item(Item=item)
