@@ -1,5 +1,5 @@
 # DNS
-A full featured DNS application with APIs to support dynamic DNS updates. Also includes a front end to manage your domains.
+A full featured DNS website to manage your domains registered with UH DNS.
 
 ### Setup:
 - Ensure both python3.7 and virtualenv are installed.
