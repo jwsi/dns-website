@@ -1,6 +1,8 @@
 # DNS
 A full featured DNS website to manage your domains registered with UH DNS.
 
+[UH DNS Website](https://uh-dns.com)
+
 ### Setup:
 - Ensure both python3.7 and virtualenv are installed.
 - In the parent directory of the repo run the command:
