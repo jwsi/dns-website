@@ -35,7 +35,7 @@ Welcome
 
 {% if not root_record %}
 	<div class="alert alert-danger">
-		<a class="float-right btn btn-sm btn-danger" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=domain+'.') }}">
+		<a class="float-right btn btn-sm btn-danger" href="{{ url_for('website.domain_record_newedit', domain=domain, hostname=domain) }}">
 			Create Record
 		</a>
 
