@@ -10,7 +10,7 @@ from api import menu, current_user
 from flask_wtf import FlaskForm
 from wtforms import *
 from wtforms.validators import InputRequired, Length
-import json, validators
+import json, validators, tldextract
 
 
 website = Blueprint('website', __name__)
@@ -37,17 +37,17 @@ def domains():
 @website.route("/domains/<domain>/")
 @requires_auth("user")
 def domain_records(domain):
+    domain = get_root_domain(domain)
     records = db.get_records_for_root_domain(domain, current_user.user_id)
     if len(records) == 0:
         abort(404)
 
     root_record = None
     for record in records:
-        if record["domain"] == domain + ".":
+        if record["domain"] == domain:
             root_record = record
 
     def getRTypes(record):
-        print(RecordType.choices())
         ret = [{ "name": key[0].name, "data": record[key[0].name]} for key in RecordType.choices() if key[0].name in record]
         return ret
 
@@ -86,6 +86,7 @@ def domain_new():
             item = {
                 "domain":  domain,
                 "user_id": current_user.user_id,
+                "live" : False,
                 "NS": { "ttl": 3600, "value": ["ns1.uh-dns.com.", "ns2.uh-dns.com."] },
                 "SOA": { "ttl": 900, "times": [2018122100,7200,900,1209600,86400], "mname": "ns1.uh-dns.com.", "rname": "engineering.ultra-horizon.com." },
             }
@@ -105,13 +106,12 @@ def domain_new():
 def domain_check(domain):
     if domain != get_root_domain(domain):
         abort(404)
-
-    root = db.get_record(domain + ".", current_user.user_id)
+    root = db.get_record(domain, current_user.user_id)
     if root is None:
         abort(404)
 
     try:
-        if not LiveChecker.check(root, domain + "."):
+        if not LiveChecker.check(root, domain):
             raise ControlledException(ReturnCode.UNKNOWN)
 
         root["live"] = True
@@ -131,7 +131,7 @@ class RecordForm(FlaskForm):
     submit = SubmitField("Save")
 
 
-def do_domain_records_new(domain, form):
+def do_domain_records_new(form):
     record_entry = {}
 
     type = form.type.data.name
@@ -149,7 +149,6 @@ def do_domain_records_new(domain, form):
         record_entry["rname"] = form.rname.data
 
     # Validate record entry
-    print(record_entry)
     if not form.type.data.check_structure(record_entry):
         return False, "Invalid record entry"
 
@@ -161,7 +160,8 @@ def do_domain_records_new(domain, form):
     if item is None:
         item = {
             "user_id": current_user.user_id,
-            "domain": form.domain.data
+            "domain": form.domain.data,
+            "live": False
         }
 
     suc, msg = form.type.data.validate_put(item, record_entry)
@@ -171,6 +171,15 @@ def do_domain_records_new(domain, form):
     # Add
     item[form.type.data.name] = record_entry
 
+    # Check whether subdomain should be marked live.
+    root_domains = db.get_root_domains(current_user.user_id)
+    domain = form.domain.data
+    while tldextract.extract(domain).subdomain != "":  # Perform recursive search up to the TLD.
+        domain = domain.split(".", 1)[1:][0]
+        if domain in root_domains:
+            record = db.get_record(domain, current_user.user_id)
+            item["live"] = record["live"]
+
     db.put_record(item)
     return True, None
 
@@ -179,18 +188,18 @@ def do_domain_records_new(domain, form):
 @website.route("/domains/<domain>/<hostname>/<record>/delete/", methods=["POST"])
 @requires_auth("user")
 def domain_record_delete(domain, hostname, record=None):
-    if domain != get_root_domain(domain):
-        abort(404)
-
     item = db.get_record(hostname, current_user.user_id)
     if item is None:
         abort(404)
 
     if record is None:
-        if get_root_domain(hostname) + "." == hostname:
+        if get_root_domain(hostname) == hostname:
             db.put_record({
                 "domain": hostname,
-                "user_id": current_user.user_id
+                "user_id": current_user.user_id,
+                "live": False,
+                "NS": {"ttl": 3600, "value": ["ns1.uh-dns.com.", "ns2.uh-dns.com."]},
+                "SOA": {"ttl": 900, "times": [2018122100, 7200, 900, 1209600, 86400], "mname": "ns1.uh-dns.com.", "rname": "engineering.ultra-horizon.com."},
             })
             flash("Cleared " + hostname + " (can't delete root domain!)", "success")
         else:
@@ -215,9 +224,6 @@ def domain_record_delete(domain, hostname, record=None):
 @website.route("/domains/<domain>/<hostname>/<record>/edit/", methods=["GET", "POST"])
 @requires_auth("user")
 def domain_record_newedit(domain, hostname=None, record=None):
-    if domain != get_root_domain(domain):
-        abort(404)
-
     form = RecordForm(formdata=request.form)
 
     if record is not None:
@@ -251,9 +257,9 @@ def domain_record_newedit(domain, hostname=None, record=None):
                     form.value.data = json.dumps(item[type.name], cls=CustomJSONEncoder)
 
     elif form.validate_on_submit():
-        suc, msg = do_domain_records_new(domain, form)
+        suc, msg = do_domain_records_new(form)
         if suc:
-            return redirect(url_for("website.domain_records", domain=domain))
+            return redirect(url_for("website.domain_records", domain=get_root_domain(domain)))
         elif msg:
             flash(msg, "danger")
 
