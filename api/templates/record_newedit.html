@@ -98,23 +98,19 @@ Welcome
 		}
 
 		buildInputs() {
-			this.field.parent().find(".row").remove();
-			this.enter = this.field.parent().append("<div class='row px-3'></div>").find(".row");
-
-			var numStructs = Object.keys(this.struct).length;
-			var fsize = Math.floor(11 / numStructs);
-			var bsize   = 12 - fsize*numStructs;
+			this.field.parent().find("table.input").remove();
+			this.enter = this.field.parent().append("<table class='input mt-4'><tr></tr></table>").find(".mt-4");
+			var input_contain = this.enter.find("tr");
 
 			this.inputs = {};
 
 			for (var key in this.struct) {
-				this.enter.append("<input id='e"+ key + "' class='form-control col-sm-" +
-						fsize + "'" + ((this.struct[key] == Number) ? " type='number'" : "") +
-						" placeholder='" + key + "'>");
-				this.inputs[key] = this.enter.find("#e" + key);
+				input_contain.append("<td><input id='e"+ key + "' class='form-control' " + ((this.struct[key] == Number) ? "type='number' " : "") +
+						"placeholder='" + key + "'><td>");
+				this.inputs[key] = input_contain.find("#e" + key);
 			}
-			this.enter.append("<button class='add-row btn btn-primary col-sm-" + bsize + "' type='button'>Add</button>")
-			this.add   = this.enter.find(".add-row");
+			input_contain.append("<td class='w-1'><button class='add-row btn btn-primary' type='button'>Add</button></td>")
+			this.add   = input_contain.find(".add-row");
 			this.add.click(this.on_add.bind(this));
 		}
 
