@@ -10,6 +10,10 @@ menu.Menu(app=app)
 csrf = CSRFProtect(app)
 
 
+from .classes.customjsonencoder import CustomJSONEncoder
+app.json_encoder = CustomJSONEncoder
+
+
 from .classes.oauth import Authentication
 
 # Setup the authentication system and define the secret session key.
