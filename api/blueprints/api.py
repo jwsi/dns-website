@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, abort
-from api import current_user
+from api import current_user, csrf
 from api.classes.db import db
 from api.classes.recordtype import RecordType
 from api.classes.livechecker import LiveChecker
@@ -28,6 +28,7 @@ def record(domain):
 
 
 @api.route("/r/<domain>/<type>/", methods=["GET", "PUT"])
+@csrf.exempt
 @requires_auth("user")
 def record_entry(domain, type):
     type = RecordType.get(type)
@@ -36,10 +37,10 @@ def record_entry(domain, type):
 
     if request.method == "GET":
         item = db.get_record(domain, current_user.user_id)
-        if item is None:
+        if item is None or type.name not in item:
             abort(404)
 
-        return jsonify(item[type])
+        return jsonify(item[type.name])
 
     else:
         item = db.get_record(domain, current_user.user_id)
@@ -47,18 +48,19 @@ def record_entry(domain, type):
             abort(404)
 
         record_entry = request.get_json()
-        if not RecordType.check_stucture_for_type(item[type], type):
+        if not type.check_structure(record_entry):
             abort(400)
 
         if not type.validate_put(item, record_entry):
             abort(400)
 
-        item[type] = record_entry
+        item[type.name] = record_entry
         ret = db.put_record(item)
         return jsonify(ret)
 
 
-@api.route("/r/<domain>/check/", methods=["GET"])
+@api.route("/r/<domain>/check/", methods=["PUT"])
+@csrf.exempt
 @requires_auth("user")
 def domain_check(domain):
     """
